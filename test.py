@@ -47,13 +47,11 @@ def get_top_movers():
         return [{"symbol": item['symbol'].replace('USDT', ''), "price": f"${float(item['lastPrice']):.4f}", "change": f"+{float(item['priceChangePercent']):.2f}%"} for item in usdt_pairs[:5]]
     except: return []
 
-# 🟢 新增：真實獲取衍生品 OI 與資金異動排名 (Bybit API)
 def get_derivatives_data():
     try:
         url = "https://api.bybit.com/v5/market/tickers?category=linear"
         data = requests.get(url, headers=HEADERS, timeout=10).json()['result']['list']
         
-        # 1. 提取 BTC 與 ETH 真實數據
         btc = next(item for item in data if item['symbol'] == 'BTCUSDT')
         eth = next(item for item in data if item['symbol'] == 'ETHUSDT')
         
@@ -62,7 +60,6 @@ def get_derivatives_data():
         eth_oi = float(eth['openInterest']) * float(eth['lastPrice'])
         eth_vol = float(eth['turnover24h'])
         
-        # 2. 計算全市場資金異動 (過濾掉 OI 小於 500萬美金的冷門幣)
         valid_pairs = []
         for item in data:
             if item['symbol'].endswith('USDT'):
@@ -76,21 +73,21 @@ def get_derivatives_data():
                         "ratio": f"{ratio:.2f}"
                     })
         
-        # 依照活躍度 (Vol/OI) 降冪排序，取前 5 名
         valid_pairs.sort(key=lambda x: float(x['ratio']), reverse=True)
         
         return {
-            "btc_oi": f"${btc_oi / 1e9:.2f}B",
-            "btc_vol": f"${btc_vol / 1e9:.2f}B",
-            "btc_ratio": f"{btc_vol / btc_oi:.2f}",
-            "eth_oi": f"${eth_oi / 1e9:.2f}B",
-            "eth_vol": f"${eth_vol / 1e9:.2f}B",
-            "eth_ratio": f"{eth_vol / eth_oi:.2f}",
+            "btc_oi": f"${btc_oi / 1e9:.2f}B", "btc_vol": f"${btc_vol / 1e9:.2f}B", "btc_ratio": f"{btc_vol / btc_oi:.2f}",
+            "eth_oi": f"${eth_oi / 1e9:.2f}B", "eth_vol": f"${eth_vol / 1e9:.2f}B", "eth_ratio": f"{eth_vol / eth_oi:.2f}",
             "top_oi_movers": valid_pairs[:5]
         }
     except Exception as e:
         print(f"OI 抓取失敗: {e}")
-        return None
+        # 🟢 防護網：如果失敗，回傳安全格式避免網頁崩潰
+        return {
+            "btc_oi": "N/A", "btc_vol": "N/A", "btc_ratio": "N/A",
+            "eth_oi": "N/A", "eth_vol": "N/A", "eth_ratio": "N/A",
+            "top_oi_movers": [{"symbol": "API 阻擋", "oi": "N/A", "ratio": "N/A"}]
+        }
 
 if __name__ == "__main__":
     print("正在獲取市場數據...")
@@ -101,7 +98,7 @@ if __name__ == "__main__":
     eth_price = get_crypto_price("ethereum")
     fgi_data = get_fear_and_greed_index()
     stablecoins = get_stablecoin_mcap()
-    deriv_data = get_derivatives_data() or {}
+    deriv_data = get_derivatives_data()
 
     data = {
         "update_time": current_time,
@@ -115,16 +112,14 @@ if __name__ == "__main__":
         "usdc_mcap": stablecoins["usdc"],
         "top_movers": get_top_movers(),
         
-        # 🟢 真實衍生品數據
-        "btc_oi": deriv_data.get("btc_oi", "N/A"),
-        "btc_vol": deriv_data.get("btc_vol", "N/A"),
-        "btc_ratio": deriv_data.get("btc_ratio", "N/A"),
-        "eth_oi": deriv_data.get("eth_oi", "N/A"),
-        "eth_vol": deriv_data.get("eth_vol", "N/A"),
-        "eth_ratio": deriv_data.get("eth_ratio", "N/A"),
-        "top_oi_movers": deriv_data.get("top_oi_movers", []),
+        "btc_oi": deriv_data["btc_oi"],
+        "btc_vol": deriv_data["btc_vol"],
+        "btc_ratio": deriv_data["btc_ratio"],
+        "eth_oi": deriv_data["eth_oi"],
+        "eth_vol": deriv_data["eth_vol"],
+        "eth_ratio": deriv_data["eth_ratio"],
+        "top_oi_movers": deriv_data["top_oi_movers"],
         
-        # 🟡 尚未串接的靜態欄位
         "dxy_index": "****", "gold_price": "****", "tga_balance": "****",
         "usdt_flow": "****", "usdc_vol_ratio": "****", "cb_premium": "****",
         "btc_exchange_flow": "****", "btc_lth": "****", "eth_exchange_flow": "****",
