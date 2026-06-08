@@ -4,10 +4,15 @@ from datetime import datetime, timedelta, timezone
 from jinja2 import Environment, FileSystemLoader
 import os
 
+# 🎭 加入瀏覽器偽裝，讓伺服器以為我們是正常的 Google Chrome 瀏覽器
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
+
 def get_crypto_price(coin_id):
     try:
         url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, headers=HEADERS, timeout=10)
         data = response.json()
         return data[coin_id]["usd"]
     except Exception as e:
@@ -17,7 +22,7 @@ def get_crypto_price(coin_id):
 def get_fear_and_greed_index():
     try:
         url = "https://api.alternative.me/fng/"
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, headers=HEADERS, timeout=10)
         data = response.json()
         fgi_value = data["data"][0]["value"]
         fgi_class = data["data"][0]["value_classification"]
@@ -26,23 +31,23 @@ def get_fear_and_greed_index():
         print(f"獲取恐懼與貪婪指數失敗: {e}")
         return {"value": "N/A", "classification": "N/A"}
 
-def get_funding_rate(symbol):
+def get_funding_rate(coin):
     try:
-        # 改用 Bybit API 獲取資金費率，完美避開幣安阻擋美國 IP 的問題
-        url = f"https://api.bybit.com/v5/market/tickers?category=linear&symbol={symbol}"
-        response = requests.get(url, timeout=10)
+        # 改用 OKX API，對開發者最友善，不擋 IP
+        url = f"https://www.okx.com/api/v5/public/funding-rate?instId={coin}-USDT-SWAP"
+        response = requests.get(url, headers=HEADERS, timeout=10)
         data = response.json()
-        rate = float(data['result']['list'][0]['fundingRate']) * 100
+        rate = float(data['data'][0]['fundingRate']) * 100
         return f"+{rate:.4f}%" if rate > 0 else f"{rate:.4f}%"
     except Exception as e:
-        print(f"獲取 {symbol} 資金費率失敗: {e}")
+        print(f"獲取 {coin} 資金費率失敗: {e}")
         return "N/A"
 
 def get_top_movers():
     try:
-        # 改用幣安「現貨 (Spot)」API，現貨 API 不會阻擋美國 IP
-        url = "https://api.binance.com/api/v3/ticker/24hr"
-        response = requests.get(url, timeout=10)
+        # 改用 MEXC API，完全開放且不阻擋美國伺服器
+        url = "https://api.mexc.com/api/v3/ticker/24hr"
+        response = requests.get(url, headers=HEADERS, timeout=10)
         data = response.json()
         usdt_pairs = [d for d in data if d['symbol'].endswith('USDT')]
         usdt_pairs.sort(key=lambda x: float(x['priceChangePercent']), reverse=True)
@@ -68,8 +73,10 @@ if __name__ == "__main__":
     btc_price = get_crypto_price("bitcoin")
     eth_price = get_crypto_price("ethereum")
     fgi_data = get_fear_and_greed_index()
-    btc_funding = get_funding_rate("BTCUSDT")
-    eth_funding = get_funding_rate("ETHUSDT")
+    
+    # 傳入 BTC 和 ETH 獲取 OKX 資金費率
+    btc_funding = get_funding_rate("BTC")
+    eth_funding = get_funding_rate("ETH")
     top_movers = get_top_movers()
 
     data = {
