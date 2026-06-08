@@ -1,6 +1,6 @@
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from jinja2 import Environment, FileSystemLoader
 import os
 
@@ -28,11 +28,11 @@ def get_fear_and_greed_index():
 
 def get_funding_rate(symbol):
     try:
-        url = "https://fapi.binance.com/fapi/v1/premiumIndex"
-        params = {"symbol": symbol}
-        response = requests.get(url, timeout=10, params=params)
+        # 改用 Bybit API 獲取資金費率，完美避開幣安阻擋美國 IP 的問題
+        url = f"https://api.bybit.com/v5/market/tickers?category=linear&symbol={symbol}"
+        response = requests.get(url, timeout=10)
         data = response.json()
-        rate = float(data['lastFundingRate']) * 100
+        rate = float(data['result']['list'][0]['fundingRate']) * 100
         return f"+{rate:.4f}%" if rate > 0 else f"{rate:.4f}%"
     except Exception as e:
         print(f"獲取 {symbol} 資金費率失敗: {e}")
@@ -40,7 +40,8 @@ def get_funding_rate(symbol):
 
 def get_top_movers():
     try:
-        url = "https://fapi.binance.com/fapi/v1/ticker/24hr"
+        # 改用幣安「現貨 (Spot)」API，現貨 API 不會阻擋美國 IP
+        url = "https://api.binance.com/api/v3/ticker/24hr"
         response = requests.get(url, timeout=10)
         data = response.json()
         usdt_pairs = [d for d in data if d['symbol'].endswith('USDT')]
@@ -59,7 +60,10 @@ def get_top_movers():
 
 if __name__ == "__main__":
     print("正在獲取市場數據...")
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 設定台灣時間 (UTC+8)
+    tz_tpe = timezone(timedelta(hours=8))
+    current_time = datetime.now(tz_tpe).strftime("%Y-%m-%d %H:%M:%S")
     
     btc_price = get_crypto_price("bitcoin")
     eth_price = get_crypto_price("ethereum")
