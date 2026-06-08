@@ -129,6 +129,22 @@
                 </div>
             </div>
 
+            <!-- 🟢 補回：24H 強勢幣種 -->
+            <div class="card">
+                <h2>🚀 24H 強勢幣種 (價格漲幅)</h2>
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
+                    <span style="width: 30px;">排名</span><span style="flex: 1;">幣種</span><span style="text-align: right; width: 80px;">最新價格</span><span style="text-align: right; width: 70px;">24H 漲幅</span>
+                </div>
+                {% for coin in top_movers %}
+                <div class="data-row" style="margin-bottom: 8px;">
+                    <span class="data-label" style="width: 30px;">#{{ loop.index }}</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">{{ coin.symbol }}</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">{{ coin.price }}</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">{{ coin.change }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
             <div class="card" style="border-color: var(--accent-orange);">
                 <h2>🔥 資金異動雷達 (Vol/OI 活躍榜)</h2>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-bottom: 10px;">
