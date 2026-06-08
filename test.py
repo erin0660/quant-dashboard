@@ -47,42 +47,63 @@ def get_top_movers():
         return [{"symbol": item['symbol'].replace('USDT', ''), "price": f"${float(item['lastPrice']):.4f}", "change": f"+{float(item['priceChangePercent']):.2f}%"} for item in usdt_pairs[:5]]
     except: return []
 
+# 🟢 替換：改用 OKX API 獲取衍生品 OI 與資金異動 (完美繞過 GitHub IP 阻擋)
 def get_derivatives_data():
     try:
-        url = "https://api.bybit.com/v5/market/tickers?category=linear"
-        data = requests.get(url, headers=HEADERS, timeout=10).json()['result']['list']
-        
-        btc = next(item for item in data if item['symbol'] == 'BTCUSDT')
-        eth = next(item for item in data if item['symbol'] == 'ETHUSDT')
-        
-        btc_oi = float(btc['openInterest']) * float(btc['lastPrice'])
-        btc_vol = float(btc['turnover24h'])
-        eth_oi = float(eth['openInterest']) * float(eth['lastPrice'])
-        eth_vol = float(eth['turnover24h'])
+        # 1. 獲取所有合約的成交量與最新價格
+        tickers_res = requests.get("https://www.okx.com/api/v5/market/tickers?instType=SWAP", headers=HEADERS, timeout=10).json()['data']
+        ticker_map = {}
+        for item in tickers_res:
+            if item['instId'].endswith('-USDT-SWAP'):
+                # OKX 的 volCcy24h 是幣本位數量，乘上價格轉換為美金價值
+                ticker_map[item['instId']] = {
+                    'price': float(item['last']),
+                    'vol_usd': float(item['volCcy24h']) * float(item['last'])
+                }
+
+        # 2. 獲取所有合約的未平倉量 (OI)
+        oi_res = requests.get("https://www.okx.com/api/v5/public/open-interest?instType=SWAP", headers=HEADERS, timeout=10).json()['data']
         
         valid_pairs = []
-        for item in data:
-            if item['symbol'].endswith('USDT'):
-                oi_usd = float(item['openInterest']) * float(item['lastPrice'])
-                vol_usd = float(item['turnover24h'])
-                if oi_usd > 5000000:  
-                    ratio = vol_usd / oi_usd
-                    valid_pairs.append({
-                        "symbol": item['symbol'].replace('USDT', ''),
-                        "oi": f"${oi_usd / 1e6:.1f}M",
-                        "ratio": f"{ratio:.2f}"
-                    })
+        btc_oi = eth_oi = btc_vol = eth_vol = 0
         
+        for item in oi_res:
+            inst_id = item['instId']
+            if inst_id not in ticker_map: continue
+            
+            symbol = inst_id.split('-')[0]
+            price = ticker_map[inst_id]['price']
+            vol_usd = ticker_map[inst_id]['vol_usd']
+            
+            # OKX 的 oiCcy 是幣本位數量，乘上價格轉換為美金價值
+            oi_usd = float(item['oiCcy']) * price
+            
+            if symbol == 'BTC':
+                btc_oi = oi_usd
+                btc_vol = vol_usd
+            elif symbol == 'ETH':
+                eth_oi = oi_usd
+                eth_vol = vol_usd
+                
+            # 過濾掉 OI 小於 500 萬美金的冷門幣，避免數據失真
+            if oi_usd > 5000000:  
+                ratio = vol_usd / oi_usd if oi_usd > 0 else 0
+                valid_pairs.append({
+                    "symbol": symbol,
+                    "oi": f"${oi_usd / 1e6:.1f}M",
+                    "ratio": f"{ratio:.2f}"
+                })
+        
+        # 依照活躍度 (Vol/OI) 降冪排序，抓出換手最瘋狂的幣
         valid_pairs.sort(key=lambda x: float(x['ratio']), reverse=True)
         
         return {
-            "btc_oi": f"${btc_oi / 1e9:.2f}B", "btc_vol": f"${btc_vol / 1e9:.2f}B", "btc_ratio": f"{btc_vol / btc_oi:.2f}",
-            "eth_oi": f"${eth_oi / 1e9:.2f}B", "eth_vol": f"${eth_vol / 1e9:.2f}B", "eth_ratio": f"{eth_vol / eth_oi:.2f}",
+            "btc_oi": f"${btc_oi / 1e9:.2f}B", "btc_vol": f"${btc_vol / 1e9:.2f}B", "btc_ratio": f"{btc_vol / btc_oi:.2f}" if btc_oi else "N/A",
+            "eth_oi": f"${eth_oi / 1e9:.2f}B", "eth_vol": f"${eth_vol / 1e9:.2f}B", "eth_ratio": f"{eth_vol / eth_oi:.2f}" if eth_oi else "N/A",
             "top_oi_movers": valid_pairs[:5]
         }
     except Exception as e:
         print(f"OI 抓取失敗: {e}")
-        # 🟢 防護網：如果失敗，回傳安全格式避免網頁崩潰
         return {
             "btc_oi": "N/A", "btc_vol": "N/A", "btc_ratio": "N/A",
             "eth_oi": "N/A", "eth_vol": "N/A", "eth_ratio": "N/A",
