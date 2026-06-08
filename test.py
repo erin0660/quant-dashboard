@@ -34,6 +34,38 @@ def get_funding_rate(coin):
     except:
         return "N/A"
 
+# 🟢 新增：真實獲取穩定幣市值 (CoinGecko)
+def get_stablecoin_mcap():
+    try:
+        url = "https://api.coingecko.com/api/v3/simple/price?ids=tether,usd-coin&vs_currencies=usd&include_market_cap=true"
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        data = response.json()
+        return {
+            "usdt": f"${data['tether']['usd_market_cap'] / 1e9:.2f} B",
+            "usdc": f"${data['usd-coin']['usd_market_cap'] / 1e9:.2f} B"
+        }
+    except:
+        return {"usdt": "****", "usdc": "****"}
+
+# 🟢 加回：真實獲取 24H 強勢幣種 (MEXC)
+def get_top_movers():
+    try:
+        url = "https://api.mexc.com/api/v3/ticker/24hr"
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        data = response.json()
+        usdt_pairs = [d for d in data if d['symbol'].endswith('USDT')]
+        usdt_pairs.sort(key=lambda x: float(x['priceChangePercent']), reverse=True)
+        top_5 = []
+        for item in usdt_pairs[:5]:
+            top_5.append({
+                "symbol": item['symbol'].replace('USDT', ''),
+                "price": f"${float(item['lastPrice']):.4f}",
+                "change": f"+{float(item['priceChangePercent']):.2f}%"
+            })
+        return top_5
+    except:
+        return []
+
 if __name__ == "__main__":
     print("正在獲取市場數據...")
     tz_tpe = timezone(timedelta(hours=8))
@@ -42,55 +74,47 @@ if __name__ == "__main__":
     btc_price = get_crypto_price("bitcoin")
     eth_price = get_crypto_price("ethereum")
     fgi_data = get_fear_and_greed_index()
+    stablecoins = get_stablecoin_mcap()
 
-    # 組合 Pro 版數據 (真實 API + 模擬進階數據)
+    # 組合數據：真實數據 + 星號遮蔽
     data = {
         "update_time": current_time,
-        # 真實數據
+        
+        # 🟢 真實數據區
         "btc_price": f"${btc_price:,}" if isinstance(btc_price, (int, float)) else btc_price,
         "eth_price": f"${eth_price:,}" if isinstance(eth_price, (int, float)) else eth_price,
         "fgi_value": fgi_data["value"],
         "fgi_classification": fgi_data["classification"],
         "btc_funding": get_funding_rate("BTC"),
         "eth_funding": get_funding_rate("ETH"),
+        "usdt_mcap": stablecoins["usdt"],
+        "usdc_mcap": stablecoins["usdc"],
+        "top_movers": get_top_movers(),
         
-        # 總經與穩定幣 (模擬)
-        "dxy_index": "100.11",
-        "gold_price": "4,359.1 (-0.14%)",
-        "tga_balance": "844,521 M (-1,201)",
-        "usdt_mcap": "187.03 B",
-        "usdt_flow": "-146.88 M (24h)",
-        "usdc_mcap": "75.58 B",
-        "usdc_vol_ratio": "0.1464",
-        
-        # 核心資產進階數據 (模擬)
-        "cb_premium": "-0.047%",
-        "btc_exchange_flow": "-4,403.17",
-        "btc_lth": "16.35 M",
-        "eth_exchange_flow": "-269.95 K",
-        "eth_top100": "89.54%",
-        
-        # ETH 節點 (模擬)
-        "eth_entry_queue": "3,024,096 ETH",
-        "eth_wait_time": "52天 12小時",
-        "eth_exit_queue": "23,246 ETH",
-        
-        # 衍生品 OI (模擬)
-        "btc_oi": "711.36K ($44.97B)",
-        "btc_oi_change": "+1.20%",
-        "btc_vol_oi_ratio": "0.57",
-        "eth_oi": "14.44M ($24.35B)",
-        "eth_oi_change": "+4.19%",
-        
-        # 選擇權與清算地圖 (模擬文本)
-        "btc_options_text": "260626 到期日名義金額現峰值 ($9.00B)，最大痛點達 $75.0K。",
-        "eth_options_text": "260925 最大痛點折線現峰值 (接近 $2.4K)。",
-        "btc_liq_text": "現價 $63,098，下方 61,040 - 63,252 區間有顯著多單清算密集區。",
-        "eth_liq_text": "現價 $1,678，上方累積極大空單清算強度，峰值突破 10.00B。"
+        # 🟡 尚未串接 API 的欄位，全部改為 ****
+        "dxy_index": "****",
+        "gold_price": "****",
+        "tga_balance": "****",
+        "usdt_flow": "****",
+        "usdc_vol_ratio": "****",
+        "cb_premium": "****",
+        "btc_exchange_flow": "****",
+        "btc_lth": "****",
+        "eth_exchange_flow": "****",
+        "eth_top100": "****",
+        "btc_oi": "****",
+        "btc_oi_change": "****",
+        "btc_vol_oi_ratio": "****",
+        "eth_oi": "****",
+        "eth_oi_change": "****",
+        "btc_options_text": "**** (待串接)",
+        "eth_options_text": "**** (待串接)",
+        "btc_liq_text": "**** (待串接)",
+        "eth_liq_text": "**** (待串接)"
     }
 
     env = Environment(loader=FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) or '.'))
     template = env.get_template('template.html')
     with open('index.html', 'w', encoding='utf-8') as f:
         f.write(template.render(data))
-    print("✅ Pro 版網頁生成成功！")
+    print("✅ 真實數據版網頁生成成功！")
