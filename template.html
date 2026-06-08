@@ -102,18 +102,18 @@
                 {% endfor %}
             </div>
 
-            <!-- 🟢 新增：OI 資金異動排名 -->
+            <!-- 🟢 修正：OI 資金異動排名迴圈 -->
             <div class="card" style="border-color: var(--accent-orange);">
                 <h2>🔥 資金異動雷達 (Vol/OI 活躍榜)</h2>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
                     <span style="width: 30px;">排名</span><span style="flex: 1;">幣種</span><span style="text-align: right; width: 80px;">總持倉(OI)</span><span style="text-align: right; width: 70px;">活躍度</span>
                 </div>
-                {% for coin in top_movers %}
+                {% for coin in top_oi_movers %}
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#{{ loop.index }}</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">{{ top_oi_movers[loop.index0].symbol }}</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">{{ top_oi_movers[loop.index0].oi }}</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 70px;">{{ top_oi_movers[loop.index0].ratio }}x</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">{{ coin.symbol }}</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">{{ coin.oi }}</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 70px;">{{ coin.ratio }}{% if coin.ratio != 'N/A' %}x{% endif %}</span>
                 </div>
                 {% endfor %}
             </div>
