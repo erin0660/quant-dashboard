@@ -6,16 +6,9 @@
     <title>Pro 專業量化交易日報</title>
     <style>
         :root {
-            --bg-color: #0f111a;
-            --card-bg: #1a1d27;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --accent-blue: #3b82f6;
-            --accent-orange: #f59e0b;
-            --positive: #10b981;
-            --negative: #ef4444;
-            --border-color: #2d3748;
-            --bar-bg: #2d3748;
+            --bg-color: #0f111a; --card-bg: #1a1d27; --text-main: #e2e8f0; --text-muted: #94a3b8;
+            --accent-blue: #3b82f6; --accent-orange: #f59e0b; --positive: #10b981; --negative: #ef4444;
+            --border-color: #2d3748; --bar-bg: #2d3748;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; font-size: 14px; }
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; }
@@ -26,7 +19,7 @@
         .card h2 { font-size: 15px; margin-top: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: #fff; }
         .data-row { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
         .data-label { color: var(--text-muted); }
-        .data-value { font-weight: 600; font-family: monospace; font-size: 15px;}
+        .data-value { font-weight: 600; font-family: monospace; font-size: 14px;}
         .text-green { color: var(--positive); }
         .text-red { color: var(--negative); }
         .text-orange { color: var(--accent-orange); }
@@ -42,11 +35,15 @@
         .bg-orange { background-color: var(--accent-orange); }
         .indicator-block { margin-bottom: 18px; }
         .indicator-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 2px;}
-        
-        /* 🤖 AI 區塊專屬樣式 */
         .ai-box { background: linear-gradient(145deg, #1e2235, #151822); border-left: 3px solid #a855f7; padding: 15px; border-radius: 6px; margin-top: 15px; border: 1px solid #3b285c; }
         .ai-title { font-size: 13px; font-weight: bold; color: #c084fc; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .ai-content { font-size: 13px; line-height: 1.6; color: #e2e8f0; }
+        
+        /* 搜尋框樣式 */
+        .search-input { flex: 1; padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border-color); background: #151822; color: white; text-transform: uppercase; outline: none; font-family: monospace;}
+        .search-input:focus { border-color: var(--accent-blue); }
+        .search-btn { padding: 8px 15px; background: var(--accent-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;}
+        .search-btn:hover { background: #2563eb; }
     </style>
 </head>
 <body>
@@ -87,17 +84,11 @@
                 </div>
                 <div class="divider"></div>
                 <div class="indicator-block">
-                    <div class="indicator-header">
-                        <span class="data-label">山寨季指數</span>
-                        <span class="data-value" style="color: #64748b;">**** (待串接)</span>
-                    </div>
+                    <div class="indicator-header"><span class="data-label">山寨季指數</span><span class="data-value" style="color: #64748b;">**** (待串接)</span></div>
                     <div class="progress-container"><div class="progress-bar bg-gray" style="width: 0%;"></div></div>
                 </div>
                 <div class="indicator-block" style="margin-bottom: 0;">
-                    <div class="indicator-header">
-                        <span class="data-label">市場平均 RSI</span>
-                        <span class="data-value" style="color: #64748b;">**** (待串接)</span>
-                    </div>
+                    <div class="indicator-header"><span class="data-label">市場平均 RSI</span><span class="data-value" style="color: #64748b;">**** (待串接)</span></div>
                     <div class="progress-container"><div class="progress-bar bg-gray" style="width: 0%;"></div></div>
                 </div>
             </div>
@@ -120,41 +111,37 @@
                 <div class="data-row"><span class="data-label">ETH 現價</span><span class="data-value text-green">{{ eth_price }}</span></div>
                 <div class="data-row"><span class="data-label">ETH 資金費率</span><span class="data-value text-red">{{ eth_funding }}</span></div>
                 
-                <!-- 🤖 AI 數據解讀區塊 -->
                 <div class="ai-box">
                     <div class="ai-title">🤖 AI 盤面綜合解讀</div>
-                    <div class="ai-content">
-                        <span style="font-weight: bold; color: #c084fc;">{{ ai.icon }} {{ ai.title }}：</span>{{ ai.text }}
-                    </div>
+                    <div class="ai-content"><span style="font-weight: bold; color: #c084fc;">{{ ai.icon }} {{ ai.title }}：</span>{{ ai.text }}</div>
                 </div>
             </div>
-            
-            <div class="card">
-                <h2>🚀 24H 強勢幣種 (價格漲幅)</h2>
-                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
-                    <span style="width: 30px;">排名</span><span style="flex: 1;">幣種</span><span style="text-align: right; width: 80px;">最新價格</span><span style="text-align: right; width: 70px;">24H 漲幅</span>
+
+            <!-- 🟢 互動式個幣查詢區塊 -->
+            <div class="card" style="border-color: var(--accent-blue);">
+                <h2>🔍 個幣即時查詢與 AI 診斷</h2>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="coinSearchInput" class="search-input" placeholder="輸入幣種 (例: SOL)" onkeypress="if(event.key === 'Enter') searchCoin()">
+                    <button class="search-btn" onclick="searchCoin()">診斷</button>
                 </div>
-                {% for coin in top_movers %}
-                <div class="data-row" style="margin-bottom: 8px;">
-                    <span class="data-label" style="width: 30px;">#{{ loop.index }}</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">{{ coin.symbol }}</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">{{ coin.price }}</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">{{ coin.change }}</span>
+                <div id="searchResult" style="display: none; margin-top: 15px;">
+                    <!-- JS 注入結果 -->
                 </div>
-                {% endfor %}
             </div>
 
             <div class="card" style="border-color: var(--accent-orange);">
                 <h2>🔥 資金異動雷達 (Vol/OI 活躍榜)</h2>
-                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
-                    <span style="width: 30px;">排名</span><span style="flex: 1;">幣種</span><span style="text-align: right; width: 80px;">總持倉(OI)</span><span style="text-align: right; width: 70px;">活躍度</span>
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-bottom: 10px;">
+                    <span style="width: 20px;">#</span><span style="flex: 1;">幣種</span><span style="text-align: right; width: 60px;">價格</span><span style="text-align: right; width: 55px;">漲跌</span><span style="text-align: right; width: 55px;">OI</span><span style="text-align: right; width: 50px;">活躍度</span>
                 </div>
                 {% for coin in top_oi_movers %}
-                <div class="data-row" style="margin-bottom: 8px;">
-                    <span class="data-label" style="width: 30px;">#{{ loop.index }}</span>
+                <div class="data-row" style="margin-bottom: 8px; font-size: 13px;">
+                    <span class="data-label" style="width: 20px;">{{ loop.index }}</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">{{ coin.symbol }}</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">{{ coin.oi }}</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 70px;">{{ coin.ratio }}{% if coin.ratio != 'N/A' %}x{% endif %}</span>
+                    <span class="data-value" style="text-align: right; width: 60px;">{{ coin.price }}</span>
+                    <span class="data-value {% if coin.change_raw > 0 %}text-green{% else %}text-red{% endif %}" style="text-align: right; width: 55px;">{{ coin.change }}</span>
+                    <span class="data-value" style="text-align: right; width: 55px;">{{ coin.oi }}</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 50px;">{{ coin.ratio }}x</span>
                 </div>
                 {% endfor %}
             </div>
@@ -176,11 +163,11 @@
                 <h2>🎯 選擇權與清算地圖分析</h2>
                 <div class="analysis-box">
                     <div class="analysis-title">BTC 選擇權 (Deribit)</div>
-                    <div class="analysis-content">{{ btc_options_text }}</div>
+                    <div class="analysis-content">{{ btc_options_text | safe }}</div>
                 </div>
                 <div class="analysis-box">
                     <div class="analysis-title">ETH 選擇權 (Deribit)</div>
-                    <div class="analysis-content">{{ eth_options_text }}</div>
+                    <div class="analysis-content">{{ eth_options_text | safe }}</div>
                 </div>
                 <div class="analysis-box" style="border-left-color: #ef4444;">
                     <div class="analysis-title">BTC 清算地圖 (1天)</div>
@@ -193,5 +180,61 @@
             </div>
         </div>
     </div>
+
+    <!-- 🟢 前端 JS 搜尋邏輯 -->
+    <script>
+        async function searchCoin() {
+            const input = document.getElementById('coinSearchInput').value.toUpperCase().trim();
+            if (!input) return;
+            const symbol = input + 'USDT';
+            const resultDiv = document.getElementById('searchResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">📡 正在呼叫幣安 API 獲取數據...</div>';
+
+            try {
+                const tickerRes = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
+                if (!tickerRes.ok) throw new Error('找不到該幣種');
+                const tickerData = await tickerRes.json();
+
+                const fundingRes = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${symbol}`);
+                let fundingRate = "無合約數據";
+                let fundingRaw = 0;
+                if (fundingRes.ok) {
+                    const fundingData = await fundingRes.json();
+                    fundingRaw = parseFloat(fundingData.lastFundingRate);
+                    fundingRate = (fundingRaw > 0 ? "+" : "") + (fundingRaw * 100).toFixed(4) + '%';
+                }
+
+                const price = parseFloat(tickerData.lastPrice);
+                const change = parseFloat(tickerData.priceChangePercent);
+                const isPositive = change >= 0;
+                const changeColor = isPositive ? 'var(--positive)' : 'var(--negative)';
+                const sign = isPositive ? '+' : '';
+
+                let aiIcon = "⚖️"; let aiTitle = "震盪整理"; let aiText = "目前該幣種走勢與資金費率無極端異常，建議依循大盤方向操作。";
+                if (change > 10 && fundingRaw > 0.001) {
+                    aiIcon = "🔥"; aiTitle = "多頭過熱"; aiText = "24H 漲幅顯著且資金費率偏高，追多風險大，留意短線回調或多頭清算。";
+                } else if (change < -10 && fundingRaw < -0.001) {
+                    aiIcon = "🩸"; aiTitle = "空頭擁擠"; aiText = "跌幅較深且呈現負費率，市場極度悲觀，隨時可能發生軋空反彈。";
+                } else if (change > 5) {
+                    aiIcon = "🚀"; aiTitle = "動能強勁"; aiText = "價格呈現強勢上漲，多頭排列，可尋找回踩支撐的右側上車機會。";
+                } else if (change < -5) {
+                    aiIcon = "📉"; aiTitle = "弱勢探底"; aiText = "目前處於下跌趨勢，承接買盤弱，建議觀望等待底部型態確立。";
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="data-row"><span class="data-label">最新價格</span><span class="data-value">$${price < 1 ? price.toFixed(4) : price.toFixed(2)}</span></div>
+                    <div class="data-row"><span class="data-label">24H 漲跌</span><span class="data-value" style="color: ${changeColor};">${sign}${change.toFixed(2)}%</span></div>
+                    <div class="data-row"><span class="data-label">資金費率</span><span class="data-value" style="color: ${fundingRaw > 0 ? 'var(--positive)' : (fundingRaw < 0 ? 'var(--negative)' : 'inherit')};">${fundingRate}</span></div>
+                    <div class="ai-box" style="margin-top: 10px; border-left-color: var(--accent-blue);">
+                        <div class="ai-title" style="color: var(--accent-blue);">${aiIcon} AI 診斷：${aiTitle}</div>
+                        <div class="ai-content">${aiText}</div>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div style="color: var(--negative); text-align: center; padding: 10px;">❌ 查詢失敗，請確認幣種代碼是否正確 (例如輸入 BTC 或 SOL)。</div>`;
+            }
+        }
+    </script>
 </body>
 </html>
