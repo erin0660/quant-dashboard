@@ -51,24 +51,16 @@ def get_derivatives_data():
     try:
         tickers_res = requests.get("https://www.okx.com/api/v5/market/tickers?instType=SWAP", headers=HEADERS, timeout=10).json()['data']
         ticker_map = {}
-        
-        # 🟢 新增：計算整體市場漲跌比例
         up_count = down_count = flat_count = 0
         
         for item in tickers_res:
             if item['instId'].endswith('-USDT-SWAP'):
                 last_price = float(item['last'])
                 open_price = float(item['open24h'])
-                
-                # 計算漲跌
                 if last_price > open_price: up_count += 1
                 elif last_price < open_price: down_count += 1
                 else: flat_count += 1
-                
-                ticker_map[item['instId']] = {
-                    'price': last_price,
-                    'vol_usd': float(item['volCcy24h']) * last_price
-                }
+                ticker_map[item['instId']] = {'price': last_price, 'vol_usd': float(item['volCcy24h']) * last_price}
 
         total_contracts = up_count + down_count + flat_count
         market_breadth = {
@@ -85,7 +77,6 @@ def get_derivatives_data():
         for item in oi_res:
             inst_id = item['instId']
             if inst_id not in ticker_map: continue
-            
             symbol = inst_id.split('-')[0]
             price = ticker_map[inst_id]['price']
             vol_usd = ticker_map[inst_id]['vol_usd']
@@ -103,16 +94,39 @@ def get_derivatives_data():
         return {
             "btc_oi": f"${btc_oi / 1e9:.2f}B", "btc_vol": f"${btc_vol / 1e9:.2f}B", "btc_ratio": f"{btc_vol / btc_oi:.2f}" if btc_oi else "N/A",
             "eth_oi": f"${eth_oi / 1e9:.2f}B", "eth_vol": f"${eth_vol / 1e9:.2f}B", "eth_ratio": f"{eth_vol / eth_oi:.2f}" if eth_oi else "N/A",
-            "top_oi_movers": valid_pairs[:5],
-            "market_breadth": market_breadth
+            "top_oi_movers": valid_pairs[:5], "market_breadth": market_breadth
         }
-    except Exception as e:
-        print(f"OI 抓取失敗: {e}")
-        return {
-            "btc_oi": "N/A", "btc_vol": "N/A", "btc_ratio": "N/A", "eth_oi": "N/A", "eth_vol": "N/A", "eth_ratio": "N/A",
-            "top_oi_movers": [{"symbol": "API 阻擋", "oi": "N/A", "ratio": "N/A"}],
-            "market_breadth": {"up": 0, "down": 0, "flat": 0, "total": 0, "up_pct": 0, "down_pct": 0, "flat_pct": 0}
-        }
+    except:
+        return {"btc_oi": "N/A", "btc_vol": "N/A", "btc_ratio": "N/A", "eth_oi": "N/A", "eth_vol": "N/A", "eth_ratio": "N/A", "top_oi_movers": [], "market_breadth": {"up": 0, "down": 0, "flat": 0, "total": 0, "up_pct": 0, "down_pct": 0, "flat_pct": 0}}
+
+# 🤖 新增：AI 量化大腦 (根據真實數據動態給出結論)
+def generate_ai_insight(fgi, btc_funding, mb, btc_ratio):
+    try:
+        # 1. 判斷情緒極端值
+        if fgi <= 15:
+            return {"icon": "🩸", "title": "極度恐慌", "text": f"市場情緒指數僅 {fgi}，處於極度冰點。歷史經驗顯示，此處流動性匱乏，需留意莊家惡意插針洗盤後出現超跌反彈。"}
+        
+        # 2. 判斷資金費率極端值
+        funding_val = float(btc_funding.replace('+', '').replace('%', ''))
+        if funding_val > 0.015:
+            return {"icon": "🔥", "title": "多頭過熱", "text": f"BTC 資金費率達 {btc_funding}，做多槓桿成本顯著偏高。合約市場多頭擁擠，需警惕下殺清算多頭的風險。"}
+        elif funding_val < -0.01:
+            return {"icon": "🧊", "title": "空頭強勢", "text": f"BTC 資金費率為 {btc_funding}，呈現深度負值。市場作空情緒濃厚，若現貨跌不下去，極易醞釀暴力軋空行情。"}
+        
+        # 3. 判斷市場廣度 (普漲/普跌)
+        if mb['down_pct'] > 70:
+            return {"icon": "📉", "title": "絕對弱勢", "text": f"全市場高達 {mb['down_pct']}% 的合約處於下跌狀態。大盤缺乏賺錢效應，建議降低部位風險，多看少做。"}
+        elif mb['up_pct'] > 70:
+            return {"icon": "🚀", "title": "全面爆發", "text": f"全市場 {mb['up_pct']}% 合約上漲。多頭動能強勁，資金正在全面擴散，可積極關注右側交易機會。"}
+            
+        # 4. 判斷活躍度
+        ratio_val = float(btc_ratio)
+        if ratio_val > 10:
+            return {"icon": "⚡", "title": "高頻換手", "text": f"BTC 持倉活躍度達 {ratio_val}x。24H 成交量遠超總持倉，短線資金博弈極度激烈，即將迎來方向性選擇。"}
+
+        return {"icon": "⚖️", "title": "市場震盪", "text": "目前各項核心指標處於中性區間，多空雙方勢均力敵。建議控制倉位，等待更明確的右側信號出現。"}
+    except:
+        return {"icon": "🤖", "title": "數據分析中", "text": "等待足夠的市場數據以生成 AI 解讀..."}
 
 if __name__ == "__main__":
     print("正在獲取市場數據...")
@@ -124,33 +138,24 @@ if __name__ == "__main__":
     fgi_data = get_fear_and_greed_index()
     stablecoins = get_stablecoin_mcap()
     deriv_data = get_derivatives_data()
+    btc_funding = get_funding_rate("BTC")
+    
+    # 執行 AI 判斷
+    ai_insight = generate_ai_insight(fgi_data["value"], btc_funding, deriv_data["market_breadth"], deriv_data["btc_ratio"])
 
     data = {
         "update_time": current_time,
         "btc_price": f"${btc_price:,}" if isinstance(btc_price, (int, float)) else btc_price,
         "eth_price": f"${eth_price:,}" if isinstance(eth_price, (int, float)) else eth_price,
-        "fgi_value": fgi_data["value"],
-        "fgi_classification": fgi_data["classification"],
-        "btc_funding": get_funding_rate("BTC"),
-        "eth_funding": get_funding_rate("ETH"),
-        "usdt_mcap": stablecoins["usdt"],
-        "usdc_mcap": stablecoins["usdc"],
+        "fgi_value": fgi_data["value"], "fgi_classification": fgi_data["classification"],
+        "btc_funding": btc_funding, "eth_funding": get_funding_rate("ETH"),
+        "usdt_mcap": stablecoins["usdt"], "usdc_mcap": stablecoins["usdc"],
         "top_movers": get_top_movers(),
-        
-        "btc_oi": deriv_data["btc_oi"],
-        "btc_vol": deriv_data["btc_vol"],
-        "btc_ratio": deriv_data["btc_ratio"],
-        "eth_oi": deriv_data["eth_oi"],
-        "eth_vol": deriv_data["eth_vol"],
-        "eth_ratio": deriv_data["eth_ratio"],
-        "top_oi_movers": deriv_data["top_oi_movers"],
-        
-        # 🟢 傳遞真實市場廣度數據
-        "mb": deriv_data["market_breadth"],
-        
-        # 🟡 靜態/待串接欄位
-        "cb_premium": "****", "btc_options_text": "**** (待串接)", 
-        "eth_options_text": "**** (待串接)", "btc_liq_text": "**** (待串接)", "eth_liq_text": "**** (待串接)"
+        "btc_oi": deriv_data["btc_oi"], "btc_vol": deriv_data["btc_vol"], "btc_ratio": deriv_data["btc_ratio"],
+        "eth_oi": deriv_data["eth_oi"], "eth_vol": deriv_data["eth_vol"], "eth_ratio": deriv_data["eth_ratio"],
+        "top_oi_movers": deriv_data["top_oi_movers"], "mb": deriv_data["market_breadth"],
+        "ai": ai_insight, # 傳遞 AI 解讀結果給網頁
+        "cb_premium": "****", "btc_options_text": "**** (待串接)", "eth_options_text": "**** (待串接)", "btc_liq_text": "**** (待串接)", "eth_liq_text": "**** (待串接)"
     }
 
     env = Environment(loader=FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) or '.'))
