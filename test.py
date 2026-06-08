@@ -1,78 +1,113 @@
 import requests
-from jinja2 import Template
+import json
 from datetime import datetime
+from jinja2 import Environment, FileSystemLoader
+import os
 
-def generate_dashboard():
-    print("正在連線獲取最新市場數據...")
-    
-    # === 1. 真實 API 數據抓取 ===
+def get_crypto_price(coin_id):
+    """獲取加密貨幣價格 (CoinGecko)"""
     try:
-        # 抓取 BTC 與 ETH 價格
-        cg_url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd"
-        prices = requests.get(cg_url).json()
-        btc_price = f"{prices['bitcoin']['usd']:,.0f}"
-        eth_price = f"{prices['ethereum']['usd']:,.0f}"
-        
-        # 抓取恐懼貪婪指數
-        fg_res = requests.get("https://api.alternative.me/fng/").json()
-        fng_value = fg_res['data'][0]['value']
-        fng_class = fg_res['data'][0]['value_classification']
+        url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        return data[coin_id]["usd"]
     except Exception as e:
-        print("API 抓取失敗:", e)
-        return
+        print(f"獲取 {coin_id} 價格失敗: {e}")
+        return "N/A"
 
-    # === 2. 準備所有要填入網頁的資料 (包含未來的擴充欄位) ===
-    data_payload = {
-        "update_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+def get_fear_and_greed_index():
+    """獲取恐懼與貪婪指數"""
+    try:
+        url = "https://api.alternative.me/fng/"
+        response = requests.get(url, timeout=10)
+        data = response.json()
+        fgi_value = data["data"][0]["value"]
+        fgi_class = data["data"][0]["value_classification"]
+        return {"value": fgi_value, "classification": fgi_class}
+    except Exception as e:
+        print(f"獲取恐懼與貪婪指數失敗: {e}")
+        return {"value": "N/A", "classification": "N/A"}
+
+def get_funding_rate(symbol):
+    """從幣安合約 API 獲取即時資金費率"""
+    try:
+        url = "https://fapi.binance.com/fapi/v1/premiumIndex"
+        params = {"symbol": symbol}
+        response = requests.get(url, timeout=10, params=params)
+        data = response.json()
+        rate = float(data['lastFundingRate']) * 100
+        return f"+{rate:.4f}%" if rate > 0 else f"{rate:.4f}%"
+    except Exception as e:
+        print(f"獲取 {symbol} 資金費率失敗: {e}")
+        return "N/A"
+
+def get_top_movers():
+    """從幣安公開 API 獲取 24 小時漲幅前 5 名的合約幣種"""
+    try:
+        url = "https://fapi.binance.com/fapi/v1/ticker/24hr"
+        response = requests.get(url, timeout=10)
+        data = response.json()
         
-        # 真實數據
-        "btc_price": btc_price,
-        "eth_price": eth_price,
-        "fng_value": fng_value,
-        "fng_class": fng_class,
+        # 篩選 USDT 交易對
+        usdt_pairs = [d for d in data if d['symbol'].endswith('USDT')]
+        # 依照漲跌幅排序
+        usdt_pairs.sort(key=lambda x: float(x['priceChangePercent']), reverse=True)
         
-        # 以下為模擬數據 (未來接上 API 後直接替換這裡的值即可)
-        "dxy_value": "100.11",
-        "gold_value": "4,359.1 (-0.14%)",
-        "tga_value": "844,521 M (-1,201)",
-        "usdt_mcap": "187.03 B",
-        "usdt_flow": "-146.88 M (24h)",
-        "usdc_mcap": "75.58 B",
-        "usdc_vol": "0.1464",
-        "btc_funding": "+0.00367%",
-        "cb_premium": "-0.047%",
-        "btc_exchange_flow": "-4,403.17",
-        "btc_lth": "16.35 M",
-        "eth_funding": "-0.00966%",
-        "eth_exchange_flow": "-269.95 K",
-        "eth_top100": "89.54%",
-        "eth_entry": "3,024,096 ETH",
-        "eth_wait": "52天 12小時",
-        "eth_exit": "23,246 ETH",
-        "btc_oi": "711.36K ($44.97B)",
-        "btc_oi_change": "+1.20%",
-        "btc_vol_oi": "0.57",
-        "eth_oi": "14.44M ($24.35B)",
-        "eth_oi_change": "+4.19%",
-        "btc_options": "260626 到期日名義金額現峰值 ($9.00B)，最大痛點達 $75.0K。",
-        "eth_options": "260925 最大痛點折線達峰值 (接近 $2.4K)。",
-        "btc_liq": f"現價 ${btc_price}。下方 61,040 - 63,252 區間有顯著多單清算密集區。",
-        "eth_liq": f"現價 ${eth_price}。上方累積極龐大空單清算強度，峰值突破 10.00B。"
+        top_5 = []
+        for item in usdt_pairs[:5]:
+            top_5.append({
+                "symbol": item['symbol'].replace('USDT', ''),
+                "price": f"${float(item['lastPrice']):.4f}",
+                "change": f"+{float(item['priceChangePercent']):.2f}%"
+            })
+        return top_5
+    except Exception as e:
+        print(f"獲取排名失敗: {e}")
+        return []
+
+if __name__ == "__main__":
+    print("正在獲取市場數據...")
+    
+    # 1. 抓取真實數據
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    btc_price = get_crypto_price("bitcoin")
+    eth_price = get_crypto_price("ethereum")
+    fgi_data = get_fear_and_greed_index()
+    btc_funding = get_funding_rate("BTCUSDT")
+    eth_funding = get_funding_rate("ETHUSDT")
+    top_movers = get_top_movers()
+
+    # 2. 準備傳入模板的數據字典 (包含真實數據與模擬佔位數據)
+    data = {
+        "update_time": current_time,
+        "btc_price": f"${btc_price:,}" if isinstance(btc_price, (int, float)) else btc_price,
+        "eth_price": f"${eth_price:,}" if isinstance(eth_price, (int, float)) else eth_price,
+        "fgi_value": fgi_data["value"],
+        "fgi_classification": fgi_data["classification"],
+        "btc_funding": btc_funding,
+        "eth_funding": eth_funding,
+        "top_movers": top_movers,
+        
+        # 以下為模擬數據 (Phase 2 後續替換)
+        "dxy_index": "104.25",
+        "gold_price": "$2,350.10",
+        "usdt_mcap": "$110.5B",
+        "usdc_mcap": "$32.1B"
     }
 
-    # === 3. 讀取模板並合成 ===
-    with open(r"template.html", "r", encoding="utf-8") as f:
-        template_content = f.read()
+    # 3. 渲染 HTML 模板
+    print("正在生成網頁...")
+    # 使用相對路徑讀取 template.html
+    env = Environment(loader=FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) or '.'))
+    template = env.get_template('template.html')
+    output_html = template.render(data)
 
-    template = Template(template_content)
-    final_html = template.render(**data_payload) # 將字典裡的所有資料一次塞進去
+    # 4. 輸出結果到 index.html
+    with open('index.html', 'w', encoding='utf-8') as f:
+        f.write(output_html)
+        
+    print("✅ 網頁生成成功！請查看 index.html")
 
-    # === 4. 產出最終網頁 ===
-    output_path = "index.html"
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(final_html)
-
-    print(f"✅ 成功！已生成完整的量化日報：{output_path}")
 
 if __name__ == "__main__":
     generate_dashboard()
