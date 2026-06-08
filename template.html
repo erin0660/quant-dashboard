@@ -5,142 +5,172 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pro 專業量化交易日報</title>
     <style>
+        :root {
+            --bg-color: #0f111a;
+            --card-bg: #1a1d27;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-blue: #3b82f6;
+            --positive: #10b981;
+            --negative: #ef4444;
+            --border-color: #2d3748;
+        }
         body {
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
+            font-size: 14px;
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 2px solid #333;
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 15px;
             margin-bottom: 20px;
         }
         .header h1 {
-            color: #3b82f6;
+            font-size: 20px;
             margin: 0;
-            font-size: 24px;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .update-time {
-            color: #888;
-            font-size: 14px;
-        }
+        .time { color: var(--text-muted); font-size: 12px; }
+        
+        /* 三欄式網格佈局 */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
         }
         .card {
-            background-color: #1e1e24;
+            background-color: var(--card-bg);
             border-radius: 8px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            border: 1px solid #2b2b36;
+            border: 1px solid var(--border-color);
         }
         .card h2 {
-            font-size: 16px;
-            color: #fff;
+            font-size: 15px;
             margin-top: 0;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #fff;
         }
         .data-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 14px;
+            margin-bottom: 12px;
+            align-items: center;
         }
-        .label { color: #aaa; }
-        .value { font-weight: bold; color: #fff; }
-        .highlight-green { color: #4ade80; }
+        .data-label { color: var(--text-muted); }
+        .data-value { font-weight: 600; font-family: monospace; font-size: 15px;}
+        .text-green { color: var(--positive); }
+        .text-red { color: var(--negative); }
+        .divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 15px 0;
+        }
         
-        /* 表格樣式 */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 14px;
+        /* 選擇權分析區塊樣式 */
+        .analysis-box {
+            background-color: #151822;
+            border-left: 3px solid var(--accent-blue);
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 0 4px 4px 0;
         }
-        th {
-            color: #888;
-            padding: 8px 0;
-            border-bottom: 1px solid #333;
-            font-weight: normal;
-        }
-        td {
-            padding: 10px 0;
-            border-bottom: 1px solid #222;
-        }
-        .rank { color: #888; }
-        .symbol { font-weight: bold; color: #fff; }
-        .price { color: #ddd; }
+        .analysis-title { color: var(--text-muted); font-size: 12px; margin-bottom: 6px;}
+        .analysis-content { font-size: 13px; line-height: 1.5; color: #cbd5e1;}
     </style>
 </head>
 <body>
-
     <div class="header">
         <h1>📊 Pro 專業量化交易日報</h1>
-        <div class="update-time">資料時間: {{ update_time }} (GMT+8)</div>
+        <div class="time">資料時間: {{ update_time }}</div>
     </div>
 
     <div class="dashboard-grid">
-        
-        <!-- 核心資產區塊 -->
-        <div class="card">
-            <h2>🪙 核心資產報價與資金費率</h2>
-            <div class="data-row"><span class="label">BTC 現價</span><span class="value">{{ btc_price }}</span></div>
-            <div class="data-row"><span class="label">BTC 資金費率</span><span class="value highlight-green">{{ btc_funding }}</span></div>
-            <br>
-            <div class="data-row"><span class="label">ETH 現價</span><span class="value">{{ eth_price }}</span></div>
-            <div class="data-row"><span class="label">ETH 資金費率</span><span class="value highlight-green">{{ eth_funding }}</span></div>
+        <!-- 左欄：總經與穩定幣 -->
+        <div class="column">
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>🌍 總體經濟與情緒</h2>
+                <div class="data-row"><span class="data-label">恐懼貪婪指數</span><span class="data-value">{{ fgi_value }} ({{ fgi_classification }})</span></div>
+                <div class="data-row"><span class="data-label">美元指數 (DXY)</span><span class="data-value">{{ dxy_index }}</span></div>
+                <div class="divider"></div>
+                <div class="data-row"><span class="data-label">黃金期貨</span><span class="data-value">{{ gold_price }}</span></div>
+                <div class="data-row"><span class="data-label">TGA 餘額</span><span class="data-value">{{ tga_balance }}</span></div>
+            </div>
+            <div class="card">
+                <h2>💵 穩定幣數據</h2>
+                <div class="data-row"><span class="data-label">USDT 市值</span><span class="data-value">{{ usdt_mcap }}</span></div>
+                <div class="data-row"><span class="data-label">USDT 交易所存量變化</span><span class="data-value text-red">{{ usdt_flow }}</span></div>
+                <div class="divider"></div>
+                <div class="data-row"><span class="data-label">USDC 市值</span><span class="data-value">{{ usdc_mcap }}</span></div>
+                <div class="data-row"><span class="data-label">USDC 成交量/市值</span><span class="data-value">{{ usdc_vol_ratio }}</span></div>
+            </div>
         </div>
 
-        <!-- 異動排名區塊 (動態生成) -->
-        <div class="card">
-            <h2 style="color: #4ade80;">🚀 24H 強勢幣種異動排名</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>排名</th>
-                        <th>幣種</th>
-                        <th>最新價格</th>
-                        <th style="text-align: right;">24H 漲幅</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for coin in top_movers %}
-                    <tr>
-                        <td class="rank">#{{ loop.index }}</td>
-                        <td class="symbol">{{ coin.symbol }}</td>
-                        <td class="price">{{ coin.price }}</td>
-                        <td class="highlight-green" style="text-align: right; font-weight: bold;">{{ coin.change }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <!-- 中欄：核心資產與節點 -->
+        <div class="column">
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>📱 核心資產報價與存量</h2>
+                <div class="data-row"><span class="data-label">BTC 現價</span><span class="data-value text-green">{{ btc_price }}</span></div>
+                <div class="data-row"><span class="data-label">BTC 資金費率</span><span class="data-value text-green">{{ btc_funding }}</span></div>
+                <div class="data-row"><span class="data-label">Coinbase 溢價</span><span class="data-value text-red">{{ cb_premium }}</span></div>
+                <div class="data-row"><span class="data-label">BTC 交易所存量 (24h)</span><span class="data-value">{{ btc_exchange_flow }}</span></div>
+                <div class="data-row"><span class="data-label">BTC LTH</span><span class="data-value">{{ btc_lth }}</span></div>
+                <div class="divider"></div>
+                <div class="data-row"><span class="data-label">ETH 現價</span><span class="data-value text-green">{{ eth_price }}</span></div>
+                <div class="data-row"><span class="data-label">ETH 資金費率</span><span class="data-value text-red">{{ eth_funding }}</span></div>
+                <div class="data-row"><span class="data-label">ETH 交易所存量 (24h)</span><span class="data-value">{{ eth_exchange_flow }}</span></div>
+                <div class="data-row"><span class="data-label">ETH Top100 持倉佔比</span><span class="data-value">{{ eth_top100 }}</span></div>
+            </div>
+            <div class="card">
+                <h2>⚙️ ETH 驗證者節點</h2>
+                <div class="data-row"><span class="data-label">Entry Queue (等待進入)</span><span class="data-value">{{ eth_entry_queue }}</span></div>
+                <div class="data-row"><span class="data-label">預估等待時間</span><span class="data-value">{{ eth_wait_time }}</span></div>
+                <div class="data-row"><span class="data-label">Exit Queue (等待退出)</span><span class="data-value">{{ eth_exit_queue }}</span></div>
+            </div>
         </div>
 
-        <!-- 總體經濟與情緒區塊 -->
-        <div class="card">
-            <h2>🌍 總體經濟與情緒</h2>
-            <div class="data-row"><span class="label">恐懼貪婪指數</span><span class="value">{{ fgi_value }} ({{ fgi_classification }})</span></div>
-            <div class="data-row"><span class="label">美元指數 (DXY)</span><span class="value">{{ dxy_index }}</span></div>
-            <div class="data-row"><span class="label">黃金現貨</span><span class="value">{{ gold_price }}</span></div>
+        <!-- 右欄：衍生品與清算 -->
+        <div class="column">
+            <div class="card" style="margin-bottom: 20px;">
+                <h2>🔥 衍生品 OI 變化</h2>
+                <div class="data-row"><span class="data-label">BTC 總未平倉量</span><span class="data-value">{{ btc_oi }}</span></div>
+                <div class="data-row"><span class="data-label">BTC OI 變化 (24h)</span><span class="data-value text-green">{{ btc_oi_change }}</span></div>
+                <div class="data-row"><span class="data-label">持倉/24h成交額</span><span class="data-value">{{ btc_vol_oi_ratio }}</span></div>
+                <div class="divider"></div>
+                <div class="data-row"><span class="data-label">ETH 總未平倉量</span><span class="data-value">{{ eth_oi }}</span></div>
+                <div class="data-row"><span class="data-label">ETH OI 變化 (24h)</span><span class="data-value text-green">{{ eth_oi_change }}</span></div>
+            </div>
+            <div class="card">
+                <h2>🎯 選擇權與清算地圖分析</h2>
+                <div class="analysis-box">
+                    <div class="analysis-title">BTC 選擇權 (Deribit)</div>
+                    <div class="analysis-content">{{ btc_options_text }}</div>
+                </div>
+                <div class="analysis-box">
+                    <div class="analysis-title">ETH 選擇權 (Deribit)</div>
+                    <div class="analysis-content">{{ eth_options_text }}</div>
+                </div>
+                <div class="analysis-box" style="border-left-color: #ef4444;">
+                    <div class="analysis-title">BTC 清算地圖 (1天)</div>
+                    <div class="analysis-content">{{ btc_liq_text }}</div>
+                </div>
+                <div class="analysis-box" style="border-left-color: #ef4444;">
+                    <div class="analysis-title">ETH 清算地圖 (180天)</div>
+                    <div class="analysis-content">{{ eth_liq_text }}</div>
+                </div>
+            </div>
         </div>
-
-        <!-- 穩定幣數據區塊 -->
-        <div class="card">
-            <h2>💵 穩定幣數據</h2>
-            <div class="data-row"><span class="label">USDT 市值</span><span class="value">{{ usdt_mcap }}</span></div>
-            <div class="data-row"><span class="label">USDC 市值</span><span class="value">{{ usdc_mcap }}</span></div>
-        </div>
-
     </div>
-
 </body>
 </html>
