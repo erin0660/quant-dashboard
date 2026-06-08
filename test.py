@@ -68,7 +68,7 @@ def generate_dashboard():
     final_html = template.render(**data_payload) # 將字典裡的所有資料一次塞進去
 
     # === 4. 產出最終網頁 ===
-    output_path = r"專業量化日報.html"
+    output_path = "index.html"
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(final_html)
 
