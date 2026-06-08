@@ -61,14 +61,14 @@ def generate_dashboard():
     }
 
     # === 3. 讀取模板並合成 ===
-    with open(r"D:\桌面\template.html", "r", encoding="utf-8") as f:
+    with open(r"template.html", "r", encoding="utf-8") as f:
         template_content = f.read()
 
     template = Template(template_content)
     final_html = template.render(**data_payload) # 將字典裡的所有資料一次塞進去
 
     # === 4. 產出最終網頁 ===
-    output_path = r"D:\桌面\專業量化日報.html"
+    output_path = r"專業量化日報.html"
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(final_html)
 
