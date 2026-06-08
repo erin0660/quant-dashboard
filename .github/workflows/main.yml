@@ -1,41 +1,48 @@
 name: Daily Quant Report
 
-# 設定鬧鐘時間與手動開關
 on:
-  push:
-    branches:
-      - main  # 當有程式碼推送到 main 分支時觸發
-  workflow_dispatch:  # 保留這個，讓你可以隨時手動點擊 "Run workflow"
+  # 允許手動點擊按鈕執行
+  workflow_dispatch:
+  # 設定自動執行的排程 (目前設定為每小時的第 0 分執行一次)
+  # 若需更改頻率，可調整 cron 表達式
   schedule:
-    # 這裡就是自動鬧鐘！'0 * * * *' 代表「每小時的第 0 分鐘」執行一次
-    - cron: '0 * * * *' 
+    - cron: '0 * * * *'
 
+# 給予 GitHub Actions 寫入檔案的權限
+permissions:
+  contents: write
 
 jobs:
   build:
-    runs-on: ubuntu-latest # 給機器人一台虛擬的 Linux 電腦
+    runs-on: ubuntu-latest
 
     steps:
-    - name: 取得程式碼
-      uses: actions/checkout@v3
+      - name: 取得程式碼
+        uses: actions/checkout@v4
+        with:
+          # 抓取完整的歷史紀錄，這對後續的 git pull --rebase 非常重要
+          fetch-depth: 0 
 
-    - name: 安裝 Python 環境
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: 安裝 Python 環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: 安裝必備套件
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests jinja2
+      - name: 安裝必備套件
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests jinja2
 
-    - name: 執行量化報表程式
-      run: python test.py
+      - name: 執行量化報表程式
+        run: python test.py
 
-    - name: 將產出的 index.html 存回 GitHub
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add index.html
-        git commit -m "Auto-generate daily report" || echo "No changes to commit"
-        git push
+      - name: 將產出的 index.html 存回 GitHub
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add index.html
+          # 如果沒有變更就不 commit，避免報錯
+          git commit -m "Auto-generate daily report" || echo "No changes to commit"
+          # 關鍵防呆：推送前先拉取遠端最新版本並合併
+          git pull --rebase origin main
+          git push
