@@ -15,6 +15,7 @@
             --positive: #10b981;
             --negative: #ef4444;
             --border-color: #2d3748;
+            --bar-bg: #2d3748;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -45,6 +46,17 @@
         .analysis-box { background-color: #151822; border-left: 3px solid var(--accent-blue); padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; }
         .analysis-title { color: var(--text-muted); font-size: 12px; margin-bottom: 6px;}
         .analysis-content { font-size: 13px; line-height: 1.5; color: #cbd5e1;}
+
+        /* 進度條樣式 */
+        .progress-container { width: 100%; background: var(--bar-bg); border-radius: 4px; height: 8px; margin-top: 6px; margin-bottom: 4px; overflow: hidden; display: flex; }
+        .progress-bar { height: 100%; transition: width 0.5s ease; }
+        .bg-green { background-color: var(--positive); }
+        .bg-red { background-color: var(--negative); }
+        .bg-gray { background-color: #64748b; }
+        .bg-orange { background-color: var(--accent-orange); }
+        .bg-blue { background-color: var(--accent-blue); }
+        .indicator-block { margin-bottom: 18px; }
+        .indicator-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 2px;}
     </style>
 </head>
 <body>
@@ -54,23 +66,70 @@
     </div>
 
     <div class="dashboard-grid">
-        <!-- 左欄：總經與穩定幣 -->
+        <!-- 左欄：市場情緒與廣度 (替換原本的總經區塊) -->
         <div class="column">
             <div class="card">
-                <h2>🌍 總體經濟與情緒</h2>
-                <div class="data-row"><span class="data-label">恐懼貪婪指數</span><span class="data-value">{{ fgi_value }} ({{ fgi_classification }})</span></div>
-                <div class="data-row"><span class="data-label">美元指數 (DXY)</span><span class="data-value">{{ dxy_index }}</span></div>
+                <h2>🌡️ 市場情緒與廣度指標</h2>
+                
+                <!-- 1. 恐懼貪婪 (真實 API) -->
+                <div class="indicator-block">
+                    <div class="indicator-header">
+                        <span class="data-label">恐懼貪婪指數</span>
+                        <span class="data-value {% if fgi_value < 40 %}text-red{% elif fgi_value > 60 %}text-green{% else %}text-orange{% endif %}">{{ fgi_value }} ({{ fgi_classification }})</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar {% if fgi_value < 40 %}bg-red{% elif fgi_value > 60 %}bg-green{% else %}bg-orange{% endif %}" style="width: {{ fgi_value }}%;"></div>
+                    </div>
+                </div>
+
+                <!-- 2. 整體市場漲跌比 (真實 API - OKX) -->
+                <div class="indicator-block">
+                    <div class="indicator-header">
+                        <span class="data-label">整體市場 (共 {{ mb.total }} 合約)</span>
+                        <span class="data-value">真實數據</span>
+                    </div>
+                    <div class="progress-container" style="height: 12px;">
+                        <div class="progress-bar bg-green" style="width: {{ mb.up_pct }}%;" title="漲"></div>
+                        <div class="progress-bar bg-gray" style="width: {{ mb.flat_pct }}%;" title="平"></div>
+                        <div class="progress-bar bg-red" style="width: {{ mb.down_pct }}%;" title="跌"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
+                        <span class="text-green">漲 {{ mb.up }}</span>
+                        <span style="color: #64748b;">平 {{ mb.flat }}</span>
+                        <span class="text-red">跌 {{ mb.down }}</span>
+                    </div>
+                </div>
+
                 <div class="divider"></div>
-                <div class="data-row"><span class="data-label">黃金期貨</span><span class="data-value">{{ gold_price }}</span></div>
-                <div class="data-row"><span class="data-label">TGA 餘額</span><span class="data-value">{{ tga_balance }}</span></div>
+
+                <!-- 3. 山寨季指數 (模擬) -->
+                <div class="indicator-block">
+                    <div class="indicator-header">
+                        <span class="data-label">山寨季指數 <span style="font-size: 10px; color: #64748b;">(待串接)</span></span>
+                        <span class="data-value text-orange">48 (中性)</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar bg-orange" style="width: 48%;"></div>
+                    </div>
+                </div>
+
+                <!-- 4. 市場平均 RSI (模擬) -->
+                <div class="indicator-block" style="margin-bottom: 0;">
+                    <div class="indicator-header">
+                        <span class="data-label">市場平均 RSI <span style="font-size: 10px; color: #64748b;">(待串接)</span></span>
+                        <span class="data-value text-red">37.7 (偏弱)</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar bg-red" style="width: 37.7%;"></div>
+                    </div>
+                </div>
             </div>
+
             <div class="card">
                 <h2>💵 穩定幣數據</h2>
                 <div class="data-row"><span class="data-label">USDT 市值</span><span class="data-value text-green">{{ usdt_mcap }}</span></div>
-                <div class="data-row"><span class="data-label">USDT 交易所存量變化</span><span class="data-value">{{ usdt_flow }}</span></div>
                 <div class="divider"></div>
                 <div class="data-row"><span class="data-label">USDC 市值</span><span class="data-value text-green">{{ usdc_mcap }}</span></div>
-                <div class="data-row"><span class="data-label">USDC 成交量/市值</span><span class="data-value">{{ usdc_vol_ratio }}</span></div>
             </div>
         </div>
 
@@ -86,7 +145,6 @@
                 <div class="data-row"><span class="data-label">ETH 資金費率</span><span class="data-value text-red">{{ eth_funding }}</span></div>
             </div>
             
-            <!-- 價格漲幅排名 -->
             <div class="card">
                 <h2>🚀 24H 強勢幣種 (價格漲幅)</h2>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
@@ -102,7 +160,6 @@
                 {% endfor %}
             </div>
 
-            <!-- 🟢 修正：OI 資金異動排名迴圈 -->
             <div class="card" style="border-color: var(--accent-orange);">
                 <h2>🔥 資金異動雷達 (Vol/OI 活躍榜)</h2>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
