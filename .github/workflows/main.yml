@@ -2,9 +2,14 @@ name: Daily Quant Report
 
 # 設定鬧鐘時間與手動開關
 on:
+  push:
+    branches:
+      - main  # 當有程式碼推送到 main 分支時觸發
+  workflow_dispatch:  # 保留這個，讓你可以隨時手動點擊 "Run workflow"
   schedule:
-    - cron: '0 0 * * *' # UTC 時間 00:00 (台灣時間早上 08:00) 自動執行
-  workflow_dispatch: # 允許我們隨時手動點擊按鈕執行
+    # 這裡就是自動鬧鐘！'0 * * * *' 代表「每小時的第 0 分鐘」執行一次
+    - cron: '0 * * * *' 
+
 
 jobs:
   build:
