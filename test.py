@@ -18,8 +18,8 @@ def get_fear_and_greed_index():
     try:
         url = "https://api.alternative.me/fng/"
         data = requests.get(url, headers=HEADERS, timeout=10).json()["data"][0]
-        return {"value": data["value"], "classification": data["value_classification"]}
-    except: return {"value": "N/A", "classification": "N/A"}
+        return {"value": int(data["value"]), "classification": data["value_classification"]}
+    except: return {"value": 50, "classification": "N/A"}
 
 def get_funding_rate(coin):
     try:
@@ -47,23 +47,38 @@ def get_top_movers():
         return [{"symbol": item['symbol'].replace('USDT', ''), "price": f"${float(item['lastPrice']):.4f}", "change": f"+{float(item['priceChangePercent']):.2f}%"} for item in usdt_pairs[:5]]
     except: return []
 
-# 🟢 替換：改用 OKX API 獲取衍生品 OI 與資金異動 (完美繞過 GitHub IP 阻擋)
 def get_derivatives_data():
     try:
-        # 1. 獲取所有合約的成交量與最新價格
         tickers_res = requests.get("https://www.okx.com/api/v5/market/tickers?instType=SWAP", headers=HEADERS, timeout=10).json()['data']
         ticker_map = {}
+        
+        # 🟢 新增：計算整體市場漲跌比例
+        up_count = down_count = flat_count = 0
+        
         for item in tickers_res:
             if item['instId'].endswith('-USDT-SWAP'):
-                # OKX 的 volCcy24h 是幣本位數量，乘上價格轉換為美金價值
+                last_price = float(item['last'])
+                open_price = float(item['open24h'])
+                
+                # 計算漲跌
+                if last_price > open_price: up_count += 1
+                elif last_price < open_price: down_count += 1
+                else: flat_count += 1
+                
                 ticker_map[item['instId']] = {
-                    'price': float(item['last']),
-                    'vol_usd': float(item['volCcy24h']) * float(item['last'])
+                    'price': last_price,
+                    'vol_usd': float(item['volCcy24h']) * last_price
                 }
 
-        # 2. 獲取所有合約的未平倉量 (OI)
+        total_contracts = up_count + down_count + flat_count
+        market_breadth = {
+            "up": up_count, "down": down_count, "flat": flat_count, "total": total_contracts,
+            "up_pct": round((up_count / total_contracts) * 100, 1) if total_contracts else 0,
+            "down_pct": round((down_count / total_contracts) * 100, 1) if total_contracts else 0,
+            "flat_pct": round((flat_count / total_contracts) * 100, 1) if total_contracts else 0
+        }
+
         oi_res = requests.get("https://www.okx.com/api/v5/public/open-interest?instType=SWAP", headers=HEADERS, timeout=10).json()['data']
-        
         valid_pairs = []
         btc_oi = eth_oi = btc_vol = eth_vol = 0
         
@@ -74,40 +89,29 @@ def get_derivatives_data():
             symbol = inst_id.split('-')[0]
             price = ticker_map[inst_id]['price']
             vol_usd = ticker_map[inst_id]['vol_usd']
-            
-            # OKX 的 oiCcy 是幣本位數量，乘上價格轉換為美金價值
             oi_usd = float(item['oiCcy']) * price
             
-            if symbol == 'BTC':
-                btc_oi = oi_usd
-                btc_vol = vol_usd
-            elif symbol == 'ETH':
-                eth_oi = oi_usd
-                eth_vol = vol_usd
+            if symbol == 'BTC': btc_oi = oi_usd; btc_vol = vol_usd
+            elif symbol == 'ETH': eth_oi = oi_usd; eth_vol = vol_usd
                 
-            # 過濾掉 OI 小於 500 萬美金的冷門幣，避免數據失真
             if oi_usd > 5000000:  
                 ratio = vol_usd / oi_usd if oi_usd > 0 else 0
-                valid_pairs.append({
-                    "symbol": symbol,
-                    "oi": f"${oi_usd / 1e6:.1f}M",
-                    "ratio": f"{ratio:.2f}"
-                })
+                valid_pairs.append({"symbol": symbol, "oi": f"${oi_usd / 1e6:.1f}M", "ratio": f"{ratio:.2f}"})
         
-        # 依照活躍度 (Vol/OI) 降冪排序，抓出換手最瘋狂的幣
         valid_pairs.sort(key=lambda x: float(x['ratio']), reverse=True)
         
         return {
             "btc_oi": f"${btc_oi / 1e9:.2f}B", "btc_vol": f"${btc_vol / 1e9:.2f}B", "btc_ratio": f"{btc_vol / btc_oi:.2f}" if btc_oi else "N/A",
             "eth_oi": f"${eth_oi / 1e9:.2f}B", "eth_vol": f"${eth_vol / 1e9:.2f}B", "eth_ratio": f"{eth_vol / eth_oi:.2f}" if eth_oi else "N/A",
-            "top_oi_movers": valid_pairs[:5]
+            "top_oi_movers": valid_pairs[:5],
+            "market_breadth": market_breadth
         }
     except Exception as e:
         print(f"OI 抓取失敗: {e}")
         return {
-            "btc_oi": "N/A", "btc_vol": "N/A", "btc_ratio": "N/A",
-            "eth_oi": "N/A", "eth_vol": "N/A", "eth_ratio": "N/A",
-            "top_oi_movers": [{"symbol": "API 阻擋", "oi": "N/A", "ratio": "N/A"}]
+            "btc_oi": "N/A", "btc_vol": "N/A", "btc_ratio": "N/A", "eth_oi": "N/A", "eth_vol": "N/A", "eth_ratio": "N/A",
+            "top_oi_movers": [{"symbol": "API 阻擋", "oi": "N/A", "ratio": "N/A"}],
+            "market_breadth": {"up": 0, "down": 0, "flat": 0, "total": 0, "up_pct": 0, "down_pct": 0, "flat_pct": 0}
         }
 
 if __name__ == "__main__":
@@ -141,12 +145,12 @@ if __name__ == "__main__":
         "eth_ratio": deriv_data["eth_ratio"],
         "top_oi_movers": deriv_data["top_oi_movers"],
         
-        "dxy_index": "****", "gold_price": "****", "tga_balance": "****",
-        "usdt_flow": "****", "usdc_vol_ratio": "****", "cb_premium": "****",
-        "btc_exchange_flow": "****", "btc_lth": "****", "eth_exchange_flow": "****",
-        "eth_top100": "****", "btc_options_text": "**** (待串接)", 
-        "eth_options_text": "**** (待串接)", "btc_liq_text": "**** (待串接)", 
-        "eth_liq_text": "**** (待串接)"
+        # 🟢 傳遞真實市場廣度數據
+        "mb": deriv_data["market_breadth"],
+        
+        # 🟡 靜態/待串接欄位
+        "cb_premium": "****", "btc_options_text": "**** (待串接)", 
+        "eth_options_text": "**** (待串接)", "btc_liq_text": "**** (待串接)", "eth_liq_text": "**** (待串接)"
     }
 
     env = Environment(loader=FileSystemLoader(os.path.dirname(os.path.abspath(__file__)) or '.'))
