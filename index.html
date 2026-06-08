@@ -15,6 +15,7 @@
             --positive: #10b981;
             --negative: #ef4444;
             --border-color: #2d3748;
+            --bar-bg: #2d3748;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -45,32 +46,90 @@
         .analysis-box { background-color: #151822; border-left: 3px solid var(--accent-blue); padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; }
         .analysis-title { color: var(--text-muted); font-size: 12px; margin-bottom: 6px;}
         .analysis-content { font-size: 13px; line-height: 1.5; color: #cbd5e1;}
+
+        /* 進度條樣式 */
+        .progress-container { width: 100%; background: var(--bar-bg); border-radius: 4px; height: 8px; margin-top: 6px; margin-bottom: 4px; overflow: hidden; display: flex; }
+        .progress-bar { height: 100%; transition: width 0.5s ease; }
+        .bg-green { background-color: var(--positive); }
+        .bg-red { background-color: var(--negative); }
+        .bg-gray { background-color: #64748b; }
+        .bg-orange { background-color: var(--accent-orange); }
+        .bg-blue { background-color: var(--accent-blue); }
+        .indicator-block { margin-bottom: 18px; }
+        .indicator-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 2px;}
     </style>
 </head>
 <body>
     <div class="header">
         <h1>📊 Pro 專業量化交易日報</h1>
-        <div class="time">資料時間: 2026-06-08 16:06:39</div>
+        <div class="time">資料時間: 2026-06-08 16:24:53</div>
     </div>
 
     <div class="dashboard-grid">
-        <!-- 左欄：總經與穩定幣 -->
+        <!-- 左欄：市場情緒與廣度 (替換原本的總經區塊) -->
         <div class="column">
             <div class="card">
-                <h2>🌍 總體經濟與情緒</h2>
-                <div class="data-row"><span class="data-label">恐懼貪婪指數</span><span class="data-value">8 (Extreme Fear)</span></div>
-                <div class="data-row"><span class="data-label">美元指數 (DXY)</span><span class="data-value">****</span></div>
+                <h2>🌡️ 市場情緒與廣度指標</h2>
+                
+                <!-- 1. 恐懼貪婪 (真實 API) -->
+                <div class="indicator-block">
+                    <div class="indicator-header">
+                        <span class="data-label">恐懼貪婪指數</span>
+                        <span class="data-value text-red">8 (Extreme Fear)</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar bg-red" style="width: 8%;"></div>
+                    </div>
+                </div>
+
+                <!-- 2. 整體市場漲跌比 (真實 API - OKX) -->
+                <div class="indicator-block">
+                    <div class="indicator-header">
+                        <span class="data-label">整體市場 (共 347 合約)</span>
+                        <span class="data-value">真實數據</span>
+                    </div>
+                    <div class="progress-container" style="height: 12px;">
+                        <div class="progress-bar bg-green" style="width: 49.3%;" title="漲"></div>
+                        <div class="progress-bar bg-gray" style="width: 0.0%;" title="平"></div>
+                        <div class="progress-bar bg-red" style="width: 50.7%;" title="跌"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
+                        <span class="text-green">漲 171</span>
+                        <span style="color: #64748b;">平 0</span>
+                        <span class="text-red">跌 176</span>
+                    </div>
+                </div>
+
                 <div class="divider"></div>
-                <div class="data-row"><span class="data-label">黃金期貨</span><span class="data-value">****</span></div>
-                <div class="data-row"><span class="data-label">TGA 餘額</span><span class="data-value">****</span></div>
+
+                <!-- 3. 山寨季指數 (模擬) -->
+                <div class="indicator-block">
+                    <div class="indicator-header">
+                        <span class="data-label">山寨季指數 <span style="font-size: 10px; color: #64748b;">(待串接)</span></span>
+                        <span class="data-value text-orange">48 (中性)</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar bg-orange" style="width: 48%;"></div>
+                    </div>
+                </div>
+
+                <!-- 4. 市場平均 RSI (模擬) -->
+                <div class="indicator-block" style="margin-bottom: 0;">
+                    <div class="indicator-header">
+                        <span class="data-label">市場平均 RSI <span style="font-size: 10px; color: #64748b;">(待串接)</span></span>
+                        <span class="data-value text-red">37.7 (偏弱)</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar bg-red" style="width: 37.7%;"></div>
+                    </div>
+                </div>
             </div>
+
             <div class="card">
                 <h2>💵 穩定幣數據</h2>
                 <div class="data-row"><span class="data-label">USDT 市值</span><span class="data-value text-green">$186.82 B</span></div>
-                <div class="data-row"><span class="data-label">USDT 交易所存量變化</span><span class="data-value">****</span></div>
                 <div class="divider"></div>
-                <div class="data-row"><span class="data-label">USDC 市值</span><span class="data-value text-green">$75.56 B</span></div>
-                <div class="data-row"><span class="data-label">USDC 成交量/市值</span><span class="data-value">****</span></div>
+                <div class="data-row"><span class="data-label">USDC 市值</span><span class="data-value text-green">$75.54 B</span></div>
             </div>
         </div>
 
@@ -78,15 +137,14 @@
         <div class="column">
             <div class="card">
                 <h2>📱 核心資產報價與存量</h2>
-                <div class="data-row"><span class="data-label">BTC 現價</span><span class="data-value text-green">$63,119</span></div>
-                <div class="data-row"><span class="data-label">BTC 資金費率</span><span class="data-value text-green">+0.00405%</span></div>
+                <div class="data-row"><span class="data-label">BTC 現價</span><span class="data-value text-green">$62,972</span></div>
+                <div class="data-row"><span class="data-label">BTC 資金費率</span><span class="data-value text-green">+0.00367%</span></div>
                 <div class="data-row"><span class="data-label">Coinbase 溢價</span><span class="data-value">****</span></div>
                 <div class="divider"></div>
-                <div class="data-row"><span class="data-label">ETH 現價</span><span class="data-value text-green">$1,667.01</span></div>
-                <div class="data-row"><span class="data-label">ETH 資金費率</span><span class="data-value text-red">-0.00574%</span></div>
+                <div class="data-row"><span class="data-label">ETH 現價</span><span class="data-value text-green">$1,662.79</span></div>
+                <div class="data-row"><span class="data-label">ETH 資金費率</span><span class="data-value text-red">-0.00539%</span></div>
             </div>
             
-            <!-- 價格漲幅排名 -->
             <div class="card">
                 <h2>🚀 24H 強勢幣種 (價格漲幅)</h2>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
@@ -97,40 +155,39 @@
                     <span class="data-label" style="width: 30px;">#1</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">TIX</span>
                     <span class="data-value" style="text-align: right; width: 80px;">$0.0018</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">+6.52%</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">+7.19%</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#2</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">BEAT</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$4.1428</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.91%</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$4.2330</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.89%</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#3</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">LOOP</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$0.0043</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.74%</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">PIPPIN</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$0.0218</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.57%</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#4</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">VIRL</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$0.0006</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.68%</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">MBD</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$0.0000</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.52%</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#5</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">ESPORTS</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$0.0830</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.60%</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">ALLO</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$0.4588</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.49%</span>
                 </div>
                 
             </div>
 
-            <!-- 🟢 修正：OI 資金異動排名迴圈 -->
             <div class="card" style="border-color: var(--accent-orange);">
                 <h2>🔥 資金異動雷達 (Vol/OI 活躍榜)</h2>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
@@ -140,36 +197,36 @@
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#1</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">BSB</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$7.3M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 70px;">50.42x</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$7.6M</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 70px;">50.59x</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#2</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">ALLO</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$11.0M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 70px;">30.46x</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$11.2M</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 70px;">29.97x</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#3</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">BEAT</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$39.5M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 70px;">18.42x</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$39.9M</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 70px;">18.63x</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#4</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">ZEC</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$61.1M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 70px;">15.93x</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">PIPPIN</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$5.1M</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 70px;">17.12x</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#5</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">WLD</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$34.7M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 70px;">12.79x</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">ZEC</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$60.8M</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 70px;">15.87x</span>
                 </div>
                 
             </div>
@@ -180,12 +237,12 @@
             <div class="card">
                 <h2>💧 真實衍生品 OI 數據</h2>
                 <div class="data-row"><span class="data-label">BTC 總未平倉量 (OI)</span><span class="data-value">$1.67B</span></div>
-                <div class="data-row"><span class="data-label">BTC 24H 成交額</span><span class="data-value">$9.17B</span></div>
-                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">5.48</span></div>
+                <div class="data-row"><span class="data-label">BTC 24H 成交額</span><span class="data-value">$9.12B</span></div>
+                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">5.45</span></div>
                 <div class="divider"></div>
-                <div class="data-row"><span class="data-label">ETH 總未平倉量 (OI)</span><span class="data-value">$1.16B</span></div>
-                <div class="data-row"><span class="data-label">ETH 24H 成交額</span><span class="data-value">$8.87B</span></div>
-                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">7.68</span></div>
+                <div class="data-row"><span class="data-label">ETH 總未平倉量 (OI)</span><span class="data-value">$1.15B</span></div>
+                <div class="data-row"><span class="data-label">ETH 24H 成交額</span><span class="data-value">$8.85B</span></div>
+                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">7.70</span></div>
             </div>
             <div class="card">
                 <h2>🎯 選擇權與清算地圖分析</h2>
