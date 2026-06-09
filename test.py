@@ -24,14 +24,24 @@ def get_top_movers():
         data = requests.get(url, headers=HEADERS, timeout=10).json()
         usdt_pairs = [d for d in data if d['symbol'].endswith('USDT')]
         usdt_pairs.sort(key=lambda x: float(x.get('priceChangePercent', 0)), reverse=True)
-        # 這裡改為抓取前 10 名
-        return [{"symbol": item['symbol'].replace('USDT', ''), "price": f"${float(item['lastPrice']):.4f}", "change": f"+{float(item['priceChangePercent']):.2f}%"} for item in usdt_pairs[:10]]
+        results = []
+        for item in usdt_pairs[:10]:
+            change_val = float(item.get('priceChangePercent', 0))
+            results.append({
+                "symbol": item['symbol'].replace('USDT', ''),
+                "price": f"${float(item['lastPrice']):.4f}",
+                "change": f"+{change_val:.2f}%" if change_val > 0 else f"{change_val:.2f}%",
+                "change_raw": change_val,
+                "oi": "$--M",   # 現貨榜單暫無合約 OI，以佔位符顯示保持版面一致
+                "ratio": "--"
+            })
+        return results
     except: return []
 
 if __name__ == "__main__":
     tz_tpe = timezone(timedelta(hours=8))
     
-    # 模擬 10 筆資金異動數據 (請替換為你實際的抓取邏輯)
+    # 模擬 10 筆資金異動數據
     mock_oi_movers = [
         {"symbol": "ALLO", "price": "$0.4158", "change": "+26.90%", "change_raw": 26.9, "oi": "$8.3M", "ratio": "60.02"},
         {"symbol": "PIPPIN", "price": "$0.0255", "change": "+42.98%", "change_raw": 42.98, "oi": "$6.1M", "ratio": "33.58"},
@@ -51,14 +61,18 @@ if __name__ == "__main__":
         "eth_price": f"${get_crypto_price('ethereum'):,}",
         "fgi_value": 50, "fgi_classification": "中性",
         "btc_funding": get_funding_rate("BTC"), "eth_funding": get_funding_rate("ETH"),
-        "usdt_mcap": "$186.89 B", "usdc_mcap": "$75.97 B",
+        
+        # 新增市值與穩定幣漲跌幅 (此處先以靜態模擬，未來可串接 API)
+        "total_mcap": "$2.45 T", "total_mcap_change": "+1.20%",
+        "usdt_mcap": "$186.89 B", "usdt_change": "+0.15%",
+        "usdc_mcap": "$75.97 B", "usdc_change": "-0.05%",
+        
         "top_movers": get_top_movers(),
         "top_oi_movers": mock_oi_movers,
         "btc_oi": "$1.79B", "btc_vol": "$7.35B", "btc_ratio": "4.12",
         "eth_oi": "$1.17B", "eth_vol": "$7.99B", "eth_ratio": "6.80",
         "mb": {"up": 179, "down": 169, "flat": 1, "total": 349, "up_pct": 51, "down_pct": 48, "flat_pct": 1},
-        "cb_premium": "****",
-        # 新增 Deribit 專業數據結構
+        
         "deribit_btc": {"pcr": "0.65", "sentiment": "偏多", "total_oi": "430,021 顆", "iv": "48.5%", "max_pain": "$62,000", "next_expiry": "本週五 (名目 $1.2B)"},
         "deribit_eth": {"pcr": "0.53", "sentiment": "偏多", "total_oi": "2,126,431 顆", "iv": "52.1%", "max_pain": "$1,600", "next_expiry": "本週五 (名目 $850M)"}
     }
