@@ -12,13 +12,11 @@
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; font-size: 14px; }
         
-        /* 調整 Header 讓手機版更好看 */
         .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; margin: 0; color: var(--accent-blue); display: flex; align-items: center; gap: 10px; }
         .header-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
         .time { color: var(--text-muted); font-size: 12px; }
         
-        /* 新增的按鈕樣式 */
         .btn-group { display: flex; gap: 8px; }
         .action-btn { padding: 6px 12px; border-radius: 4px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; text-decoration: none; transition: 0.2s; }
         .btn-refresh { background-color: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
@@ -26,8 +24,10 @@
         .btn-trigger { background-color: var(--accent-orange); color: #fff; }
         .btn-trigger:hover { background-color: #d97706; }
 
-        /* 響應式網格 (手機版自動變單欄) */
-        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start; }
+        /* 改為三欄式網格 */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
         
         .card { background-color: var(--card-bg); border-radius: 8px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 20px; }
         .card h2 { font-size: 15px; margin-top: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: #fff; }
@@ -38,9 +38,7 @@
         .text-red { color: var(--negative); }
         .text-orange { color: var(--accent-orange); }
         .divider { height: 1px; background-color: var(--border-color); margin: 15px 0; }
-        .analysis-box { background-color: #151822; border-left: 3px solid var(--accent-blue); padding: 12px; margin-bottom: 12px; border-radius: 0 4px 4px 0; }
-        .analysis-title { color: var(--text-muted); font-size: 12px; margin-bottom: 6px;}
-        .analysis-content { font-size: 13px; line-height: 1.5; color: #cbd5e1;}
+        
         .progress-container { width: 100%; background: var(--bar-bg); border-radius: 4px; height: 8px; margin-top: 6px; margin-bottom: 4px; overflow: hidden; display: flex; }
         .progress-bar { height: 100%; transition: width 0.5s ease; }
         .bg-green { background-color: var(--positive); }
@@ -49,14 +47,18 @@
         .bg-orange { background-color: var(--accent-orange); }
         .indicator-block { margin-bottom: 18px; }
         .indicator-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 2px;}
-        .ai-box { background: linear-gradient(145deg, #1e2235, #151822); border-left: 3px solid #a855f7; padding: 15px; border-radius: 6px; margin-top: 15px; border: 1px solid #3b285c; }
-        .ai-title { font-size: 13px; font-weight: bold; color: #c084fc; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .ai-content { font-size: 13px; line-height: 1.6; color: #e2e8f0; }
         
         .search-input { flex: 1; padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border-color); background: #151822; color: white; text-transform: uppercase; outline: none; font-family: monospace;}
         .search-input:focus { border-color: var(--accent-blue); }
         .search-btn { padding: 8px 15px; background: var(--accent-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;}
         .search-btn:hover { background: #2563eb; }
+
+        .deribit-box { background-color: #151822; border-left: 3px solid #8b5cf6; padding: 15px; margin-bottom: 15px; border-radius: 0 4px 4px 0; }
+        .deribit-title { color: #fff; font-weight: bold; font-size: 14px; margin-bottom: 10px; display: flex; justify-content: space-between;}
+        .deribit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px; }
+        .deribit-item { display: flex; flex-direction: column; gap: 4px; }
+        .deribit-label { color: var(--text-muted); }
+        .deribit-val { color: #e2e8f0; font-family: monospace; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -65,20 +67,14 @@
         <div class="header-controls">
             <div class="time">資料時間: {{ update_time }}</div>
             <div class="btn-group">
-                <!-- 手機版重新整理按鈕 -->
-                <button class="action-btn btn-refresh" onclick="window.location.reload(true)">
-                    🔄 刷新網頁
-                </button>
-                <!-- 捷徑：跳轉到 GitHub 後台手動觸發 -->
-                <a href="https://github.com/erin0660/quant-dashboard/actions/workflows/main.yml" target="_blank" class="action-btn btn-trigger">
-                    ⚡ 觸發後台更新
-                </a>
+                <button class="action-btn btn-refresh" onclick="window.location.reload(true)">🔄 刷新網頁</button>
+                <a href="https://github.com/erin0660/quant-dashboard/actions/workflows/main.yml" target="_blank" class="action-btn btn-trigger">⚡ 觸發後台更新</a>
             </div>
         </div>
     </div>
 
     <div class="dashboard-grid">
-        <!-- 左欄 -->
+        <!-- 左欄：大盤情緒、穩定幣、核心現貨、總 OI -->
         <div class="column">
             <div class="card">
                 <h2>🌡️ 市場情緒與廣度指標</h2>
@@ -87,46 +83,35 @@
                         <span class="data-label">恐懼貪婪指數</span>
                         <span class="data-value {% if fgi_value < 40 %}text-red{% elif fgi_value > 60 %}text-green{% else %}text-orange{% endif %}">{{ fgi_value }} ({{ fgi_classification }})</span>
                     </div>
-                    <div class="progress-container">
-                        <div class="progress-bar {% if fgi_value < 40 %}bg-red{% elif fgi_value > 60 %}bg-green{% else %}bg-orange{% endif %}" style="width: {{ fgi_value }}%;"></div>
-                    </div>
+                    <div class="progress-container"><div class="progress-bar {% if fgi_value < 40 %}bg-red{% elif fgi_value > 60 %}bg-green{% else %}bg-orange{% endif %}" style="width: {{ fgi_value }}%;"></div></div>
                 </div>
                 <div class="indicator-block">
-                    <div class="indicator-header">
-                        <span class="data-label">整體市場 (共 {{ mb.total }} 合約)</span>
-                        <span class="data-value">真實數據</span>
-                    </div>
+                    <div class="indicator-header"><span class="data-label">整體市場 (共 {{ mb.total }} 合約)</span><span class="data-value">真實數據</span></div>
                     <div class="progress-container" style="height: 12px;">
-                        <div class="progress-bar bg-green" style="width: {{ mb.up_pct }}%;" title="漲"></div>
-                        <div class="progress-bar bg-gray" style="width: {{ mb.flat_pct }}%;" title="平"></div>
-                        <div class="progress-bar bg-red" style="width: {{ mb.down_pct }}%;" title="跌"></div>
+                        <div class="progress-bar bg-green" style="width: {{ mb.up_pct }}%;"></div>
+                        <div class="progress-bar bg-gray" style="width: {{ mb.flat_pct }}%;"></div>
+                        <div class="progress-bar bg-red" style="width: {{ mb.down_pct }}%;"></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
-                        <span class="text-green">漲 {{ mb.up }}</span>
-                        <span style="color: #64748b;">平 {{ mb.flat }}</span>
-                        <span class="text-red">跌 {{ mb.down }}</span>
+                        <span class="text-green">漲 {{ mb.up }}</span><span style="color: #64748b;">平 {{ mb.flat }}</span><span class="text-red">跌 {{ mb.down }}</span>
                     </div>
                 </div>
                 <div class="divider"></div>
                 <div class="indicator-block">
                     <div class="indicator-header"><span class="data-label">山寨季指數</span><span class="data-value" style="color: #64748b;">**** (待串接)</span></div>
-                    <div class="progress-container"><div class="progress-bar bg-gray" style="width: 0%;"></div></div>
                 </div>
                 <div class="indicator-block" style="margin-bottom: 0;">
                     <div class="indicator-header"><span class="data-label">市場平均 RSI</span><span class="data-value" style="color: #64748b;">**** (待串接)</span></div>
-                    <div class="progress-container"><div class="progress-bar bg-gray" style="width: 0%;"></div></div>
                 </div>
             </div>
+
             <div class="card">
                 <h2>💵 穩定幣數據</h2>
                 <div class="data-row"><span class="data-label">USDT 市值</span><span class="data-value text-green">{{ usdt_mcap }}</span></div>
                 <div class="divider"></div>
                 <div class="data-row"><span class="data-label">USDC 市值</span><span class="data-value text-green">{{ usdc_mcap }}</span></div>
             </div>
-        </div>
 
-        <!-- 中欄 -->
-        <div class="column">
             <div class="card">
                 <h2>📱 核心資產報價與存量</h2>
                 <div class="data-row"><span class="data-label">BTC 現價</span><span class="data-value text-green">{{ btc_price }}</span></div>
@@ -135,46 +120,40 @@
                 <div class="divider"></div>
                 <div class="data-row"><span class="data-label">ETH 現價</span><span class="data-value text-green">{{ eth_price }}</span></div>
                 <div class="data-row"><span class="data-label">ETH 資金費率</span><span class="data-value text-red">{{ eth_funding }}</span></div>
-                
-                <div class="ai-box">
-                    <div class="ai-title">🤖 AI 盤面綜合解讀</div>
-                    <div class="ai-content"><span style="font-weight: bold; color: #c084fc;">{{ ai.icon }} {{ ai.title }}：</span>{{ ai.text }}</div>
-                </div>
-            </div>
-
-            <div class="card" style="border-color: var(--accent-blue);">
-                <h2>🔍 個幣即時查詢與 AI 診斷</h2>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="coinSearchInput" class="search-input" placeholder="輸入幣種 (例: SOL)" onkeypress="if(event.key === 'Enter') searchCoin()">
-                    <button class="search-btn" onclick="searchCoin()">診斷</button>
-                </div>
-                <div id="searchResult" style="display: none; margin-top: 15px;">
-                    <!-- JS 注入結果 -->
-                </div>
             </div>
 
             <div class="card">
-                <h2>🚀 24H 強勢幣種 (價格漲幅)</h2>
-                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
-                    <span style="width: 30px;">排名</span><span style="flex: 1;">幣種</span><span style="text-align: right; width: 80px;">最新價格</span><span style="text-align: right; width: 70px;">24H 漲幅</span>
+                <h2>💧 真實衍生品 OI 數據</h2>
+                <div class="data-row"><span class="data-label">BTC 總未平倉量 (OI)</span><span class="data-value">{{ btc_oi }}</span></div>
+                <div class="data-row"><span class="data-label">BTC 24H 成交額</span><span class="data-value">{{ btc_vol }}</span></div>
+                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">{{ btc_ratio }}</span></div>
+                <div class="divider"></div>
+                <div class="data-row"><span class="data-label">ETH 總未平倉量 (OI)</span><span class="data-value">{{ eth_oi }}</span></div>
+                <div class="data-row"><span class="data-label">ETH 24H 成交額</span><span class="data-value">{{ eth_vol }}</span></div>
+                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">{{ eth_ratio }}</span></div>
+            </div>
+        </div>
+
+        <!-- 中欄：查幣功能、資金異動雷達 (10名) -->
+        <div class="column">
+            <div class="card" style="border-color: var(--accent-blue);">
+                <h2>🔍 個幣合約數據速查</h2>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="coinSearchInput" class="search-input" placeholder="輸入幣種 (例: SOL)" onkeypress="if(event.key === 'Enter') searchCoin()">
+                    <button class="search-btn" onclick="searchCoin()">查詢</button>
                 </div>
-                {% for coin in top_movers %}
-                <div class="data-row" style="margin-bottom: 8px;">
-                    <span class="data-label" style="width: 30px;">#{{ loop.index }}</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">{{ coin.symbol }}</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">{{ coin.price }}</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">{{ coin.change }}</span>
+                <div id="searchResult" style="display: none; margin-top: 15px; background: #151822; padding: 15px; border-radius: 6px; border: 1px solid #2d3748;">
+                    <!-- JS 注入純數據 -->
                 </div>
-                {% endfor %}
             </div>
 
             <div class="card" style="border-color: var(--accent-orange);">
-                <h2>🔥 資金異動雷達 (Vol/OI 活躍榜)</h2>
+                <h2>🔥 資金異動雷達 (Vol/OI 活躍榜 Top 10)</h2>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11px; margin-bottom: 10px;">
                     <span style="width: 20px;">#</span><span style="flex: 1;">幣種</span><span style="text-align: right; width: 60px;">價格</span><span style="text-align: right; width: 55px;">漲跌</span><span style="text-align: right; width: 55px;">OI</span><span style="text-align: right; width: 50px;">活躍度</span>
                 </div>
                 {% for coin in top_oi_movers %}
-                <div class="data-row" style="margin-bottom: 8px; font-size: 13px;">
+                <div class="data-row" style="margin-bottom: 10px; font-size: 13px;">
                     <span class="data-label" style="width: 20px;">{{ loop.index }}</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">{{ coin.symbol }}</span>
                     <span class="data-value" style="text-align: right; width: 60px;">{{ coin.price }}</span>
@@ -186,91 +165,116 @@
             </div>
         </div>
 
-        <!-- 右欄 -->
+        <!-- 右欄：Deribit 專業數據、強勢幣種 (10名) -->
         <div class="column">
             <div class="card">
-                <h2>💧 真實衍生品 OI 數據</h2>
-                <div class="data-row"><span class="data-label">BTC 總未平倉量 (OI)</span><span class="data-value">{{ btc_oi }}</span></div>
-                <div class="data-row"><span class="data-label">BTC 24H 成交額</span><span class="data-value">{{ btc_vol }}</span></div>
-                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">{{ btc_ratio }}</span></div>
-                <div class="divider"></div>
-                <div class="data-row"><span class="data-label">ETH 總未平倉量 (OI)</span><span class="data-value">{{ eth_oi }}</span></div>
-                <div class="data-row"><span class="data-label">ETH 24H 成交額</span><span class="data-value">{{ eth_vol }}</span></div>
-                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">{{ eth_ratio }}</span></div>
+                <h2>🎯 Deribit 選擇權核心指標</h2>
+                
+                <!-- BTC Deribit -->
+                <div class="deribit-box">
+                    <div class="deribit-title">
+                        <span>BTC 選擇權</span>
+                        <span class="text-orange">PCR: {{ deribit_btc.pcr }} ({{ deribit_btc.sentiment }})</span>
+                    </div>
+                    <div class="deribit-grid">
+                        <div class="deribit-item"><span class="deribit-label">總持倉量 (OI)</span><span class="deribit-val">{{ deribit_btc.total_oi }}</span></div>
+                        <div class="deribit-item"><span class="deribit-label">隱含波動率 (IV)</span><span class="deribit-val">{{ deribit_btc.iv }}</span></div>
+                        <div class="deribit-item"><span class="deribit-label">最大痛點</span><span class="deribit-val text-red">{{ deribit_btc.max_pain }}</span></div>
+                        <div class="deribit-item"><span class="deribit-label">近期大額交割</span><span class="deribit-val">{{ deribit_btc.next_expiry }}</span></div>
+                    </div>
+                </div>
+
+                <!-- ETH Deribit -->
+                <div class="deribit-box" style="border-left-color: #3b82f6; margin-bottom: 0;">
+                    <div class="deribit-title">
+                        <span>ETH 選擇權</span>
+                        <span class="text-orange">PCR: {{ deribit_eth.pcr }} ({{ deribit_eth.sentiment }})</span>
+                    </div>
+                    <div class="deribit-grid">
+                        <div class="deribit-item"><span class="deribit-label">總持倉量 (OI)</span><span class="deribit-val">{{ deribit_eth.total_oi }}</span></div>
+                        <div class="deribit-item"><span class="deribit-label">隱含波動率 (IV)</span><span class="deribit-val">{{ deribit_eth.iv }}</span></div>
+                        <div class="deribit-item"><span class="deribit-label">最大痛點</span><span class="deribit-val text-red">{{ deribit_eth.max_pain }}</span></div>
+                        <div class="deribit-item"><span class="deribit-label">近期大額交割</span><span class="deribit-val">{{ deribit_eth.next_expiry }}</span></div>
+                    </div>
+                </div>
             </div>
+
             <div class="card">
-                <h2>🎯 選擇權與清算地圖分析</h2>
-                <div class="analysis-box">
-                    <div class="analysis-title">BTC 選擇權 (Deribit)</div>
-                    <div class="analysis-content">{{ btc_options_text | safe }}</div>
+                <h2>🚀 24H 強勢幣種 Top 10</h2>
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
+                    <span style="width: 30px;">排名</span><span style="flex: 1;">幣種</span><span style="text-align: right; width: 80px;">最新價格</span><span style="text-align: right; width: 70px;">24H 漲幅</span>
                 </div>
-                <div class="analysis-box">
-                    <div class="analysis-title">ETH 選擇權 (Deribit)</div>
-                    <div class="analysis-content">{{ eth_options_text | safe }}</div>
+                {% for coin in top_movers %}
+                <div class="data-row" style="margin-bottom: 10px;">
+                    <span class="data-label" style="width: 30px;">#{{ loop.index }}</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">{{ coin.symbol }}</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">{{ coin.price }}</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">{{ coin.change }}</span>
                 </div>
-                <div class="analysis-box" style="border-left-color: #ef4444;">
-                    <div class="analysis-title">BTC 清算地圖 (1天)</div>
-                    <div class="analysis-content">{{ btc_liq_text }}</div>
-                </div>
-                <div class="analysis-box" style="border-left-color: #ef4444;">
-                    <div class="analysis-title">ETH 清算地圖 (180天)</div>
-                    <div class="analysis-content">{{ eth_liq_text }}</div>
-                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 
     <script>
+        function formatNumber(num) {
+            if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+            return num.toFixed(2);
+        }
+
         async function searchCoin() {
             const input = document.getElementById('coinSearchInput').value.toUpperCase().trim();
             if (!input) return;
             const symbol = input + 'USDT';
             const resultDiv = document.getElementById('searchResult');
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 10px;">📡 正在呼叫幣安 API 獲取數據...</div>';
+            resultDiv.innerHTML = '<div style="color: var(--text-muted); text-align: center;">📡 獲取幣安合約數據中...</div>';
 
             try {
-                const tickerRes = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`);
-                if (!tickerRes.ok) throw new Error('找不到該幣種');
+                // 抓取價格與成交量
+                const tickerRes = await fetch(`https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${symbol}`);
+                if (!tickerRes.ok) throw new Error('找不到該幣種合約');
                 const tickerData = await tickerRes.json();
 
+                // 抓取資金費率
                 const fundingRes = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=${symbol}`);
-                let fundingRate = "無合約數據";
-                let fundingRaw = 0;
+                let fundingRate = "N/A"; let fundingColor = "inherit";
                 if (fundingRes.ok) {
                     const fundingData = await fundingRes.json();
-                    fundingRaw = parseFloat(fundingData.lastFundingRate);
-                    fundingRate = (fundingRaw > 0 ? "+" : "") + (fundingRaw * 100).toFixed(4) + '%';
+                    const rawRate = parseFloat(fundingData.lastFundingRate);
+                    fundingRate = (rawRate > 0 ? "+" : "") + (rawRate * 100).toFixed(4) + '%';
+                    fundingColor = rawRate > 0 ? 'var(--positive)' : (rawRate < 0 ? 'var(--negative)' : 'inherit');
+                }
+
+                // 抓取未平倉量 (OI)
+                const oiRes = await fetch(`https://fapi.binance.com/fapi/v1/openInterest?symbol=${symbol}`);
+                let oiValue = "N/A";
+                if (oiRes.ok) {
+                    const oiData = await oiRes.json();
+                    // OI 價值 = OI 數量 * 當前價格
+                    const oiUsd = parseFloat(oiData.openInterest) * parseFloat(tickerData.lastPrice);
+                    oiValue = '$' + formatNumber(oiUsd);
                 }
 
                 const price = parseFloat(tickerData.lastPrice);
                 const change = parseFloat(tickerData.priceChangePercent);
-                const isPositive = change >= 0;
-                const changeColor = isPositive ? 'var(--positive)' : 'var(--negative)';
-                const sign = isPositive ? '+' : '';
-
-                let aiIcon = "⚖️"; let aiTitle = "震盪整理"; let aiText = "目前該幣種走勢與資金費率無極端異常，建議依循大盤方向操作。";
-                if (change > 10 && fundingRaw > 0.001) {
-                    aiIcon = "🔥"; aiTitle = "多頭過熱"; aiText = "24H 漲幅顯著且資金費率偏高，追多風險大，留意短線回調或多頭清算。";
-                } else if (change < -10 && fundingRaw < -0.001) {
-                    aiIcon = "🩸"; aiTitle = "空頭擁擠"; aiText = "跌幅較深且呈現負費率，市場極度悲觀，隨時可能發生軋空反彈。";
-                } else if (change > 5) {
-                    aiIcon = "🚀"; aiTitle = "動能強勁"; aiText = "價格呈現強勢上漲，多頭排列，可尋找回踩支撐的右側上車機會。";
-                } else if (change < -5) {
-                    aiIcon = "📉"; aiTitle = "弱勢探底"; aiText = "目前處於下跌趨勢，承接買盤弱，建議觀望等待底部型態確立。";
-                }
+                const volUsd = parseFloat(tickerData.quoteVolume);
+                const changeColor = change >= 0 ? 'var(--positive)' : 'var(--negative)';
+                const sign = change >= 0 ? '+' : '';
 
                 resultDiv.innerHTML = `
-                    <div class="data-row"><span class="data-label">最新價格</span><span class="data-value">$${price < 1 ? price.toFixed(4) : price.toFixed(2)}</span></div>
-                    <div class="data-row"><span class="data-label">24H 漲跌</span><span class="data-value" style="color: ${changeColor};">${sign}${change.toFixed(2)}%</span></div>
-                    <div class="data-row"><span class="data-label">資金費率</span><span class="data-value" style="color: ${fundingRaw > 0 ? 'var(--positive)' : (fundingRaw < 0 ? 'var(--negative)' : 'inherit')};">${fundingRate}</span></div>
-                    <div class="ai-box" style="margin-top: 10px; border-left-color: var(--accent-blue);">
-                        <div class="ai-title" style="color: var(--accent-blue);">${aiIcon} AI 診斷：${aiTitle}</div>
-                        <div class="ai-content">${aiText}</div>
-                    </div>
+                    <div class="data-row" style="margin-bottom: 8px;"><span class="data-label">現貨/合約標的</span><span class="data-value" style="color: #fff;">${input}</span></div>
+                    <div class="data-row" style="margin-bottom: 8px;"><span class="data-label">最新價格</span><span class="data-value">$${price < 1 ? price.toFixed(4) : price.toFixed(2)}</span></div>
+                    <div class="data-row" style="margin-bottom: 8px;"><span class="data-label">24H 漲跌幅</span><span class="data-value" style="color: ${changeColor};">${sign}${change.toFixed(2)}%</span></div>
+                    <div class="data-row" style="margin-bottom: 8px;"><span class="data-label">當前資金費率</span><span class="data-value" style="color: ${fundingColor};">${fundingRate}</span></div>
+                    <div class="divider" style="margin: 10px 0;"></div>
+                    <div class="data-row" style="margin-bottom: 8px;"><span class="data-label">合約未平倉量 (OI)</span><span class="data-value">${oiValue}</span></div>
+                    <div class="data-row" style="margin-bottom: 0;"><span class="data-label">24H 成交額 (USDT)</span><span class="data-value">$${formatNumber(volUsd)}</span></div>
                 `;
             } catch (error) {
-                resultDiv.innerHTML = `<div style="color: var(--negative); text-align: center; padding: 10px;">❌ 查詢失敗，請確認幣種代碼是否正確 (例如輸入 BTC 或 SOL)。</div>`;
+                resultDiv.innerHTML = `<div style="color: var(--negative); text-align: center;">❌ 查詢失敗，請確認是否輸入正確的合約代碼 (如 SOL)。</div>`;
             }
         }
     </script>
