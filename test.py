@@ -27,30 +27,61 @@ def get_funding_rate(coin):
         return f"+{rate:.5f}%" if rate > 0 else f"{rate:.5f}%"
     except: return "****"
 
-def get_core_futures_data(coin):
-    # 使用 OKX API 抓取 BTC/ETH 核心數據 (穩定度高)
+def get_hyperliquid_data():
+    # 使用 Hyperliquid DEX API (無 IP 限制，數據極度穩定)
     try:
-        url = f"https://www.okx.com/api/v5/market/ticker?instId={coin}-USDT-SWAP"
-        data = requests.get(url, headers=HEADERS, timeout=10).json()['data'][0]
+        url = "https://api.hyperliquid.xyz/info"
+        headers = {"Content-Type": "application/json"}
+        payload = {"type": "metaAndAssetCtxs"}
+        res = requests.post(url, headers=headers, json=payload, timeout=10).json()
         
-        price = float(data['last'])
-        vol_usd = float(data['volCcy24h']) # 24H 成交額 (USDT)
+        universe = res[0]["universe"]
+        asset_ctxs = res[1]
         
-        # 抓取 OI
-        oi_url = f"https://www.okx.com/api/v5/public/open-interest?instId={coin}-USDT-SWAP"
-        oi_data = requests.get(oi_url, headers=HEADERS, timeout=10).json()['data'][0]
-        oi_coin = float(oi_data['oi']) # 張數
+        btc_data = {"oi": "****", "vol": "****", "ratio": "****"}
+        eth_data = {"oi": "****", "vol": "****", "ratio": "****"}
+        oi_movers = []
         
-        # OKX 1張 BTC = 0.01 BTC, 1張 ETH = 0.1 ETH
-        multiplier = 0.01 if coin == "BTC" else 0.1
-        oi_usd = oi_coin * multiplier * price
+        for i, asset in enumerate(universe):
+            symbol = asset["name"]
+            ctx = asset_ctxs[i]
+            
+            price = float(ctx["markPx"])
+            prev_price = float(ctx["prevDayPx"])
+            change_raw = ((price - prev_price) / prev_price) * 100 if prev_price > 0 else 0
+            
+            vol_usd = float(ctx["dayNtlVlm"])
+            oi_coin = float(ctx["openInterest"])
+            oi_usd = oi_coin * price
+            
+            ratio = vol_usd / oi_usd if oi_usd > 0 else 0
+            
+            if symbol == "BTC":
+                btc_data = {"oi": f"${oi_usd/1e9:.2f}B", "vol": f"${vol_usd/1e9:.2f}B", "ratio": f"{ratio:.2f}"}
+            elif symbol == "ETH":
+                eth_data = {"oi": f"${oi_usd/1e9:.2f}B", "vol": f"${vol_usd/1e9:.2f}B", "ratio": f"{ratio:.2f}"}
+            else:
+                # 過濾掉 24H 成交量小於 1000 萬美金的冷門幣
+                if vol_usd > 10000000 and oi_usd > 1000000:
+                    oi_movers.append({
+                        "symbol": symbol,
+                        "price": f"${price:.4f}" if price < 1 else f"${price:.2f}",
+                        "change": f"+{change_raw:.2f}%" if change_raw > 0 else f"{change_raw:.2f}%",
+                        "change_raw": change_raw,
+                        "oi": f"${oi_usd/1000000:.1f}M",
+                        "ratio_val": ratio,
+                        "ratio": f"{ratio:.1f}x"
+                    })
         
-        ratio = vol_usd / oi_usd if oi_usd > 0 else 0
-        return f"${oi_usd/1e9:.2f}B", f"${vol_usd/1e9:.2f}B", f"{ratio:.2f}"
-    except: return "****", "****", "****"
+        # 依照活躍度排序，取前 10 名
+        oi_movers.sort(key=lambda x: x["ratio_val"], reverse=True)
+        return btc_data, eth_data, oi_movers[:10]
+    except Exception as e:
+        print(f"Hyperliquid Error: {e}")
+        return {"oi": "****", "vol": "****", "ratio": "****"}, {"oi": "****", "vol": "****", "ratio": "****"}, []
 
 def get_top_movers():
-    # MEXC 現貨強勢榜
+    # MEXC 現貨強勢榜 (已確認運作正常)
     try:
         url = "https://api.mexc.com/api/v3/ticker/24hr"
         data = requests.get(url, headers=HEADERS, timeout=10).json()
@@ -69,56 +100,11 @@ def get_top_movers():
         return results
     except: return []
 
-def get_okx_oi_movers():
-    # 使用 OKX API 抓取資金異動榜 (解決 GitHub 擋 IP 問題)
-    try:
-        url = "https://www.okx.com/api/v5/market/tickers?instType=SWAP"
-        data = requests.get(url, headers=HEADERS, timeout=10).json()['data']
-        
-        results = []
-        for item in data:
-            if not item['instId'].endswith('-USDT-SWAP'): continue
-            symbol = item['instId'].split('-')[0]
-            if symbol in ['BTC', 'ETH']: continue
-            
-            price = float(item['last'])
-            open24h = float(item['sod24h'])
-            change_raw = ((price - open24h) / open24h) * 100 if open24h > 0 else 0
-            vol_usd = float(item['volCcy24h'])
-            
-            # 為了避免抓取太慢，我們只針對成交量大於 5000 萬美金的熱門幣去抓 OI
-            if vol_usd < 50000000: continue
-            
-            try:
-                oi_url = f"https://www.okx.com/api/v5/public/open-interest?instId={item['instId']}"
-                oi_data = requests.get(oi_url, headers=HEADERS, timeout=5).json()['data'][0]
-                # 簡化計算：直接用合約張數 * 價格 (僅作活躍度相對比較)
-                oi_val = float(oi_data['oi']) * price / 100 # 粗略換算
-                
-                if oi_val > 1000000: # 排除極小 OI
-                    ratio = vol_usd / oi_val
-                    results.append({
-                        "symbol": symbol,
-                        "price": f"${price:.4f}" if price < 1 else f"${price:.2f}",
-                        "change": f"+{change_raw:.2f}%" if change_raw > 0 else f"{change_raw:.2f}%",
-                        "change_raw": change_raw,
-                        "oi_usd_val": oi_val,
-                        "oi": f"${oi_val/1000000:.1f}M",
-                        "ratio_val": ratio,
-                        "ratio": f"{ratio:.1f}x"
-                    })
-            except: continue
-            
-        results.sort(key=lambda x: x['ratio_val'], reverse=True)
-        return results[:10]
-    except: return []
-
 if __name__ == "__main__":
     tz_tpe = timezone(timedelta(hours=8))
     
     mcap_val, mcap_change = get_global_mcap()
-    btc_oi, btc_vol, btc_ratio = get_core_futures_data("BTC")
-    eth_oi, eth_vol, eth_ratio = get_core_futures_data("ETH")
+    btc_data, eth_data, oi_movers = get_hyperliquid_data()
 
     data = {
         "update_time": datetime.now(tz_tpe).strftime("%Y-%m-%d %H:%M:%S"),
@@ -128,8 +114,8 @@ if __name__ == "__main__":
         "btc_funding": get_funding_rate("BTC"), "eth_funding": get_funding_rate("ETH"),
         
         "total_mcap": mcap_val, "total_mcap_change": mcap_change,
-        "btc_oi": btc_oi, "btc_vol": btc_vol, "btc_ratio": btc_ratio,
-        "eth_oi": eth_oi, "eth_vol": eth_vol, "eth_ratio": eth_ratio,
+        "btc_oi": btc_data["oi"], "btc_vol": btc_data["vol"], "btc_ratio": btc_data["ratio"],
+        "eth_oi": eth_data["oi"], "eth_vol": eth_data["vol"], "eth_ratio": eth_data["ratio"],
         
         "usdt_mcap": "****", "usdt_change": "****",
         "usdc_mcap": "****", "usdc_change": "****",
@@ -138,7 +124,7 @@ if __name__ == "__main__":
         "deribit_eth": {"pcr": "****", "sentiment": "****", "total_oi": "****", "iv": "****", "max_pain": "****", "next_expiry": "****"},
         
         "top_movers": get_top_movers(),           
-        "top_oi_movers": get_okx_oi_movers(), 
+        "top_oi_movers": oi_movers, 
     }
     
     env = Environment(loader=FileSystemLoader('.'))
