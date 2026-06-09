@@ -11,10 +11,24 @@
             --border-color: #2d3748; --bar-bg: #2d3748;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-color); color: var(--text-main); margin: 0; padding: 20px; font-size: 14px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; }
+        
+        /* 調整 Header 讓手機版更好看 */
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .header h1 { font-size: 20px; margin: 0; color: var(--accent-blue); display: flex; align-items: center; gap: 10px; }
+        .header-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
         .time { color: var(--text-muted); font-size: 12px; }
-        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: start; }
+        
+        /* 新增的按鈕樣式 */
+        .btn-group { display: flex; gap: 8px; }
+        .action-btn { padding: 6px 12px; border-radius: 4px; border: none; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; text-decoration: none; transition: 0.2s; }
+        .btn-refresh { background-color: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+        .btn-refresh:hover { background-color: #334155; }
+        .btn-trigger { background-color: var(--accent-orange); color: #fff; }
+        .btn-trigger:hover { background-color: #d97706; }
+
+        /* 響應式網格 (手機版自動變單欄) */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start; }
+        
         .card { background-color: var(--card-bg); border-radius: 8px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 20px; }
         .card h2 { font-size: 15px; margin-top: 0; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; color: #fff; }
         .data-row { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
@@ -39,7 +53,6 @@
         .ai-title { font-size: 13px; font-weight: bold; color: #c084fc; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
         .ai-content { font-size: 13px; line-height: 1.6; color: #e2e8f0; }
         
-        /* 搜尋框樣式 */
         .search-input { flex: 1; padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border-color); background: #151822; color: white; text-transform: uppercase; outline: none; font-family: monospace;}
         .search-input:focus { border-color: var(--accent-blue); }
         .search-btn { padding: 8px 15px; background: var(--accent-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;}
@@ -49,7 +62,19 @@
 <body>
     <div class="header">
         <h1>📊 Pro 專業量化交易日報</h1>
-        <div class="time">資料時間: 2026-06-09 08:14:57</div>
+        <div class="header-controls">
+            <div class="time">資料時間: 2026-06-09 08:20:47</div>
+            <div class="btn-group">
+                <!-- 手機版重新整理按鈕 -->
+                <button class="action-btn btn-refresh" onclick="window.location.reload(true)">
+                    🔄 刷新網頁
+                </button>
+                <!-- 捷徑：跳轉到 GitHub 後台手動觸發 -->
+                <a href="https://github.com/erin0660/quant-dashboard/actions/workflows/main.yml" target="_blank" class="action-btn btn-trigger">
+                    ⚡ 觸發後台更新
+                </a>
+            </div>
+        </div>
     </div>
 
     <div class="dashboard-grid">
@@ -72,14 +97,14 @@
                         <span class="data-value">真實數據</span>
                     </div>
                     <div class="progress-container" style="height: 12px;">
-                        <div class="progress-bar bg-green" style="width: 50.4%;" title="漲"></div>
-                        <div class="progress-bar bg-gray" style="width: 0.6%;" title="平"></div>
-                        <div class="progress-bar bg-red" style="width: 49.0%;" title="跌"></div>
+                        <div class="progress-bar bg-green" style="width: 49.9%;" title="漲"></div>
+                        <div class="progress-bar bg-gray" style="width: 2.0%;" title="平"></div>
+                        <div class="progress-bar bg-red" style="width: 48.1%;" title="跌"></div>
                     </div>
                     <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
-                        <span class="text-green">漲 176</span>
-                        <span style="color: #64748b;">平 2</span>
-                        <span class="text-red">跌 171</span>
+                        <span class="text-green">漲 174</span>
+                        <span style="color: #64748b;">平 7</span>
+                        <span class="text-red">跌 168</span>
                     </div>
                 </div>
                 <div class="divider"></div>
@@ -104,12 +129,12 @@
         <div class="column">
             <div class="card">
                 <h2>📱 核心資產報價與存量</h2>
-                <div class="data-row"><span class="data-label">BTC 現價</span><span class="data-value text-green">$63,006</span></div>
-                <div class="data-row"><span class="data-label">BTC 資金費率</span><span class="data-value text-green">-0.00085%</span></div>
+                <div class="data-row"><span class="data-label">BTC 現價</span><span class="data-value text-green">$63,067</span></div>
+                <div class="data-row"><span class="data-label">BTC 資金費率</span><span class="data-value text-green">-0.00079%</span></div>
                 <div class="data-row"><span class="data-label">Coinbase 溢價</span><span class="data-value">****</span></div>
                 <div class="divider"></div>
-                <div class="data-row"><span class="data-label">ETH 現價</span><span class="data-value text-green">$1,686.63</span></div>
-                <div class="data-row"><span class="data-label">ETH 資金費率</span><span class="data-value text-red">-0.01523%</span></div>
+                <div class="data-row"><span class="data-label">ETH 現價</span><span class="data-value text-green">$1,691.97</span></div>
+                <div class="data-row"><span class="data-label">ETH 資金費率</span><span class="data-value text-red">-0.01520%</span></div>
                 
                 <div class="ai-box">
                     <div class="ai-title">🤖 AI 盤面綜合解讀</div>
@@ -117,7 +142,6 @@
                 </div>
             </div>
 
-            <!-- 🟢 互動式個幣查詢區塊 -->
             <div class="card" style="border-color: var(--accent-blue);">
                 <h2>🔍 個幣即時查詢與 AI 診斷</h2>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
@@ -129,7 +153,6 @@
                 </div>
             </div>
 
-            <!-- 🟢 補回：24H 強勢幣種 -->
             <div class="card">
                 <h2>🚀 24H 強勢幣種 (價格漲幅)</h2>
                 <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 12px; margin-bottom: 10px;">
@@ -139,8 +162,8 @@
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#1</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">DVERSE</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$0.0014</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">+1.84%</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$0.0018</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">+2.45%</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
@@ -159,16 +182,16 @@
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#4</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">MBD</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$0.0000</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.53%</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">UBOX</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$0.0003</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.55%</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px;">
                     <span class="data-label" style="width: 30px;">#5</span>
-                    <span style="font-weight: bold; color: #fff; flex: 1;">PIPPIN</span>
-                    <span class="data-value" style="text-align: right; width: 80px;">$0.0267</span>
-                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.51%</span>
+                    <span style="font-weight: bold; color: #fff; flex: 1;">MBD</span>
+                    <span class="data-value" style="text-align: right; width: 80px;">$0.0000</span>
+                    <span class="data-value text-green" style="text-align: right; width: 70px;">+0.53%</span>
                 </div>
                 
             </div>
@@ -182,46 +205,46 @@
                 <div class="data-row" style="margin-bottom: 8px; font-size: 13px;">
                     <span class="data-label" style="width: 20px;">1</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">ALLO</span>
-                    <span class="data-value" style="text-align: right; width: 60px;">$0.4143</span>
-                    <span class="data-value text-green" style="text-align: right; width: 55px;">+24.37%</span>
+                    <span class="data-value" style="text-align: right; width: 60px;">$0.4173</span>
+                    <span class="data-value text-green" style="text-align: right; width: 55px;">+22.20%</span>
                     <span class="data-value" style="text-align: right; width: 55px;">$8.4M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 50px;">59.42x</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 50px;">59.78x</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px; font-size: 13px;">
                     <span class="data-label" style="width: 20px;">2</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">PIPPIN</span>
-                    <span class="data-value" style="text-align: right; width: 60px;">$0.0267</span>
-                    <span class="data-value text-green" style="text-align: right; width: 55px;">+51.96%</span>
+                    <span class="data-value" style="text-align: right; width: 60px;">$0.0266</span>
+                    <span class="data-value text-green" style="text-align: right; width: 55px;">+48.27%</span>
                     <span class="data-value" style="text-align: right; width: 55px;">$6.5M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 50px;">32.10x</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 50px;">31.70x</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px; font-size: 13px;">
                     <span class="data-label" style="width: 20px;">3</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">BSB</span>
-                    <span class="data-value" style="text-align: right; width: 60px;">$0.2975</span>
-                    <span class="data-value text-red" style="text-align: right; width: 55px;">-10.93%</span>
+                    <span class="data-value" style="text-align: right; width: 60px;">$0.3001</span>
+                    <span class="data-value text-red" style="text-align: right; width: 55px;">-11.03%</span>
                     <span class="data-value" style="text-align: right; width: 55px;">$5.7M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 50px;">27.11x</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 50px;">27.09x</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px; font-size: 13px;">
                     <span class="data-label" style="width: 20px;">4</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">BEAT</span>
                     <span class="data-value" style="text-align: right; width: 60px;">$4.40</span>
-                    <span class="data-value text-green" style="text-align: right; width: 55px;">+25.42%</span>
-                    <span class="data-value" style="text-align: right; width: 55px;">$41.5M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 50px;">16.66x</span>
+                    <span class="data-value text-green" style="text-align: right; width: 55px;">+24.60%</span>
+                    <span class="data-value" style="text-align: right; width: 55px;">$41.6M</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 50px;">16.63x</span>
                 </div>
                 
                 <div class="data-row" style="margin-bottom: 8px; font-size: 13px;">
                     <span class="data-label" style="width: 20px;">5</span>
                     <span style="font-weight: bold; color: #fff; flex: 1;">WLD</span>
-                    <span class="data-value" style="text-align: right; width: 60px;">$0.4982</span>
-                    <span class="data-value text-green" style="text-align: right; width: 55px;">+4.10%</span>
-                    <span class="data-value" style="text-align: right; width: 55px;">$38.4M</span>
-                    <span class="data-value text-orange" style="text-align: right; width: 50px;">12.95x</span>
+                    <span class="data-value" style="text-align: right; width: 60px;">$0.5062</span>
+                    <span class="data-value text-green" style="text-align: right; width: 55px;">+6.08%</span>
+                    <span class="data-value" style="text-align: right; width: 55px;">$38.8M</span>
+                    <span class="data-value text-orange" style="text-align: right; width: 50px;">13.05x</span>
                 </div>
                 
             </div>
@@ -232,22 +255,22 @@
             <div class="card">
                 <h2>💧 真實衍生品 OI 數據</h2>
                 <div class="data-row"><span class="data-label">BTC 總未平倉量 (OI)</span><span class="data-value">$1.80B</span></div>
-                <div class="data-row"><span class="data-label">BTC 24H 成交額</span><span class="data-value">$7.30B</span></div>
+                <div class="data-row"><span class="data-label">BTC 24H 成交額</span><span class="data-value">$7.31B</span></div>
                 <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">4.06</span></div>
                 <div class="divider"></div>
                 <div class="data-row"><span class="data-label">ETH 總未平倉量 (OI)</span><span class="data-value">$1.17B</span></div>
-                <div class="data-row"><span class="data-label">ETH 24H 成交額</span><span class="data-value">$7.95B</span></div>
-                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">6.82</span></div>
+                <div class="data-row"><span class="data-label">ETH 24H 成交額</span><span class="data-value">$8.01B</span></div>
+                <div class="data-row"><span class="data-label">持倉活躍度 (Vol/OI)</span><span class="data-value text-orange">6.87</span></div>
             </div>
             <div class="card">
                 <h2>🎯 選擇權與清算地圖分析</h2>
                 <div class="analysis-box">
                     <div class="analysis-title">BTC 選擇權 (Deribit)</div>
-                    <div class="analysis-content">PCR: 0.65 (偏多 🐂)<br>總持倉: 430,847 顆</div>
+                    <div class="analysis-content">PCR: 0.65 (偏多 🐂)<br>總持倉: 430,893 顆</div>
                 </div>
                 <div class="analysis-box">
                     <div class="analysis-title">ETH 選擇權 (Deribit)</div>
-                    <div class="analysis-content">PCR: 0.53 (偏多 🐂)<br>總持倉: 2,127,715 顆</div>
+                    <div class="analysis-content">PCR: 0.53 (偏多 🐂)<br>總持倉: 2,127,927 顆</div>
                 </div>
                 <div class="analysis-box" style="border-left-color: #ef4444;">
                     <div class="analysis-title">BTC 清算地圖 (1天)</div>
@@ -261,7 +284,6 @@
         </div>
     </div>
 
-    <!-- 🟢 前端 JS 搜尋邏輯 -->
     <script>
         async function searchCoin() {
             const input = document.getElementById('coinSearchInput').value.toUpperCase().trim();
