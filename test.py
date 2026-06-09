@@ -9,16 +9,17 @@ def get_crypto_price(coin_id):
     try:
         url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
         return requests.get(url, headers=HEADERS, timeout=10).json()[coin_id]["usd"]
-    except: return "N/A"
+    except: return "****"
 
 def get_funding_rate(coin):
     try:
         url = f"https://www.okx.com/api/v5/public/funding-rate?instId={coin}-USDT-SWAP"
         rate = float(requests.get(url, headers=HEADERS, timeout=10).json()['data'][0]['fundingRate']) * 100
         return f"+{rate:.5f}%" if rate > 0 else f"{rate:.5f}%"
-    except: return "N/A"
+    except: return "****"
 
 def get_top_movers():
+    # MEXC 現貨強勢榜 (真實數據)
     try:
         url = "https://api.mexc.com/api/v3/ticker/24hr"
         data = requests.get(url, headers=HEADERS, timeout=10).json()
@@ -32,29 +33,54 @@ def get_top_movers():
                 "price": f"${float(item['lastPrice']):.4f}",
                 "change": f"+{change_val:.2f}%" if change_val > 0 else f"{change_val:.2f}%",
                 "change_raw": change_val,
-                "oi": "$--M",   # 現貨榜單暫無合約 OI，以佔位符顯示保持版面一致
-                "ratio": "--"
+                "oi": "****",   # 現貨無 OI
+                "ratio": "****" # 現貨無活躍度
             })
         return results
+    except: return []
+
+def get_bybit_oi_movers():
+    # Bybit 合約資金異動榜 (真實數據)
+    try:
+        url = "https://api.bybit.com/v5/market/tickers?category=linear"
+        data = requests.get(url, headers=HEADERS, timeout=10).json()
+        if data.get("retCode") != 0: return []
+        
+        results = []
+        for item in data["result"]["list"]:
+            if not item["symbol"].endswith("USDT"): continue
+            
+            symbol = item["symbol"].replace("USDT", "")
+            price = float(item["lastPrice"])
+            change_raw = float(item["price24hPcnt"]) * 100  # Bybit 漲跌幅是小數，需乘 100
+            turnover = float(item["turnover24h"])           # 24H 成交額 (USDT)
+            oi_coin = float(item["openInterest"])           # 未平倉量 (幣本位)
+            oi_usd = oi_coin * price                        # 換算為 USD 價值
+            
+            # 過濾掉 OI 小於 100 萬美金的冷門幣，避免活躍度失真
+            if oi_usd < 1000000: continue
+            
+            ratio = turnover / oi_usd if oi_usd > 0 else 0
+            
+            results.append({
+                "symbol": symbol,
+                "price": f"${price:.4f}" if price < 1 else f"${price:.2f}",
+                "change": f"+{change_raw:.2f}%" if change_raw > 0 else f"{change_raw:.2f}%",
+                "change_raw": change_raw,
+                "oi_usd_val": oi_usd,
+                "oi": f"${oi_usd/1000000:.1f}M",
+                "ratio_val": ratio,
+                "ratio": f"{ratio:.1f}"
+            })
+        
+        # 依照活躍度 (Vol/OI) 降冪排序，抓取前 10 名
+        results.sort(key=lambda x: x["ratio_val"], reverse=True)
+        return results[:10]
     except: return []
 
 if __name__ == "__main__":
     tz_tpe = timezone(timedelta(hours=8))
     
-    # 模擬 10 筆資金異動數據
-    mock_oi_movers = [
-        {"symbol": "ALLO", "price": "$0.4158", "change": "+26.90%", "change_raw": 26.9, "oi": "$8.3M", "ratio": "60.02"},
-        {"symbol": "PIPPIN", "price": "$0.0255", "change": "+42.98%", "change_raw": 42.98, "oi": "$6.1M", "ratio": "33.58"},
-        {"symbol": "BSB", "price": "$0.3021", "change": "-10.06%", "change_raw": -10.06, "oi": "$5.8M", "ratio": "27.05"},
-        {"symbol": "BEAT", "price": "$4.36", "change": "+28.68%", "change_raw": 28.68, "oi": "$41.5M", "ratio": "16.72"},
-        {"symbol": "WLD", "price": "$0.4959", "change": "+6.12%", "change_raw": 6.12, "oi": "$38.8M", "ratio": "12.84"},
-        {"symbol": "SOL", "price": "$145.20", "change": "+3.15%", "change_raw": 3.15, "oi": "$2.1B", "ratio": "8.50"},
-        {"symbol": "PEPE", "price": "$0.00001", "change": "+15.2%", "change_raw": 15.2, "oi": "$150M", "ratio": "7.20"},
-        {"symbol": "ORDI", "price": "$45.30", "change": "-5.40%", "change_raw": -5.4, "oi": "$85M", "ratio": "6.80"},
-        {"symbol": "TIA", "price": "$12.10", "change": "+8.90%", "change_raw": 8.9, "oi": "$120M", "ratio": "5.90"},
-        {"symbol": "FET", "price": "$2.30", "change": "+11.2%", "change_raw": 11.2, "oi": "$95M", "ratio": "5.10"}
-    ]
-
     data = {
         "update_time": datetime.now(tz_tpe).strftime("%Y-%m-%d %H:%M:%S"),
         "btc_price": f"${get_crypto_price('bitcoin'):,}",
@@ -62,20 +88,22 @@ if __name__ == "__main__":
         "fgi_value": 50, "fgi_classification": "中性",
         "btc_funding": get_funding_rate("BTC"), "eth_funding": get_funding_rate("ETH"),
         
-        # 新增市值與穩定幣漲跌幅 (此處先以靜態模擬，未來可串接 API)
-        "total_mcap": "$2.45 T", "total_mcap_change": "+1.20%",
-        "usdt_mcap": "$186.89 B", "usdt_change": "+0.15%",
-        "usdc_mcap": "$75.97 B", "usdc_change": "-0.05%",
+        # 未串接 API 的欄位嚴格使用 ****
+        "total_mcap": "****", "total_mcap_change": "****",
+        "usdt_mcap": "****", "usdt_change": "****",
+        "usdc_mcap": "****", "usdc_change": "****",
         
-        "top_movers": get_top_movers(),
-        "top_oi_movers": mock_oi_movers,
-        "btc_oi": "$1.79B", "btc_vol": "$7.35B", "btc_ratio": "4.12",
-        "eth_oi": "$1.17B", "eth_vol": "$7.99B", "eth_ratio": "6.80",
-        "mb": {"up": 179, "down": 169, "flat": 1, "total": 349, "up_pct": 51, "down_pct": 48, "flat_pct": 1},
+        "top_movers": get_top_movers(),           # MEXC 真實現貨數據
+        "top_oi_movers": get_bybit_oi_movers(),   # Bybit 真實合約數據
         
-        "deribit_btc": {"pcr": "0.65", "sentiment": "偏多", "total_oi": "430,021 顆", "iv": "48.5%", "max_pain": "$62,000", "next_expiry": "本週五 (名目 $1.2B)"},
-        "deribit_eth": {"pcr": "0.53", "sentiment": "偏多", "total_oi": "2,126,431 顆", "iv": "52.1%", "max_pain": "$1,600", "next_expiry": "本週五 (名目 $850M)"}
+        "btc_oi": "****", "btc_vol": "****", "btc_ratio": "****",
+        "eth_oi": "****", "eth_vol": "****", "eth_ratio": "****",
+        "mb": {"up": "****", "down": "****", "flat": "****", "total": "****", "up_pct": 0, "down_pct": 0, "flat_pct": 0},
+        
+        "deribit_btc": {"pcr": "****", "sentiment": "****", "total_oi": "****", "iv": "****", "max_pain": "****", "next_expiry": "****"},
+        "deribit_eth": {"pcr": "****", "sentiment": "****", "total_oi": "****", "iv": "****", "max_pain": "****", "next_expiry": "****"}
     }
+    
     env = Environment(loader=FileSystemLoader('.'))
     template = env.get_template('template.html')
     with open('index.html', 'w', encoding='utf-8') as f:
